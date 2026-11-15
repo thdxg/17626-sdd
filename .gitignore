@@ -1,0 +1,5 @@
+# Track Spec Kit skills even though the global gitignore ignores .claude
+!.claude/
+.DS_Store
+node_modules/
+dist/
