@@ -78,7 +78,7 @@ The sprint has 17 MUST goals, 5 SHOULD goals, and 1 assumption. Each goal maps t
 
 ★ means no stakeholder said it (yellow in the diagram).
 
-Assumptions A-3 to A-6 are also in the model, as domain hypotheses next to the goals they affect. A-2 and A-7 to A-9 only describe the mock data and how the prototype works, so they stay in the spec.
+Assumptions A-3 to A-6 are also in the model, as domain hypotheses next to the goals they affect. The other assumptions in the spec only describe the mock data (A-2) and how the prototype works (A-7 to A-10). For example, A-10 says the tablet and the kitchen display run as two tabs of one browser. They do not change any goal, so they stay in the spec.
 
 We changed one thing while we wrote the spec. Spec Kit found that the tablet said "Cannot confirm" for a dish with missing information (REQ-16), but the kitchen could still tap "Confirm" on it (REQ-10). So the two screens could say different things. We added a sentence to REQ-10, so the kitchen cannot confirm such a dish. So REQ-10 now traces to both G-38 and G-70.
 

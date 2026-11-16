@@ -40,7 +40,7 @@ All requirements use the EARS form. "SHALL" is used for every requirement; the p
 ### Server tablet: checking dishes
 
 - **REQ-04** [MUST] (G-22): WHEN the server views or adds a dish for a seat with an allergy, IF the dish record lists one of that seat's allergens, THEN THE SYSTEM SHALL show "Contains <allergen>" on the dish. IF the dish record lists none of that seat's allergens, THEN THE SYSTEM SHALL NOT show "Contains".
-- **REQ-05** [MUST] (G-23): IF a dish has no conflict and the kitchen has not confirmed it, THEN THE SYSTEM SHALL label it "Not confirmed". THE SYSTEM SHALL NOT show the words "safe" or "allergen-free" on any screen.
+- **REQ-05** [MUST] (G-23): WHEN the server views a dish for a seat with an allergy, IF the dish has no conflict and the kitchen has not confirmed it, THEN THE SYSTEM SHALL label it "Not confirmed". THE SYSTEM SHALL NOT show the words "safe" or "allergen-free" on any screen.
 - **REQ-16** [MUST] (G-70): IF a dish record marks its allergen information as missing or unverified, THEN THE SYSTEM SHALL label the dish "Cannot confirm" for any seat with an allergy.
 - **REQ-19** [SHOULD] (G-17): WHEN an allergy is recorded for a seat that already has dishes, THE SYSTEM SHALL check those dishes again under REQ-04, REQ-05 and REQ-16.
 - **REQ-20** [SHOULD] (G-25): WHEN a dish shows "Contains <allergen>", THE SYSTEM SHALL offer only the changes that the dish record lists as chef-approved for that allergen.
