@@ -423,6 +423,9 @@ Added while writing this spec (do not change any requirement):
 - A-8: A newly sent allergy item has kitchen status "Sent" until it is acknowledged.
 - A-9: One tablet and one kitchen display are used at a time; the role menu decides which actions
   are offered, following the role named in each requirement.
+- A-10: The server tablet and the kitchen display run as two tabs or windows of one browser and
+  share state in that browser; there is no server. A "Reset demo data" control restores the mock
+  data. (Needed so REQ-12 can be met without external services, Constitution IV.)
 
 ## Conflict Decisions
 
