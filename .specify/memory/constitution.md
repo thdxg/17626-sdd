@@ -1,50 +1,59 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Allergy Order Round Trip Constitution
+
+A prototype for a bistro: a server tablet and a kitchen display that carry a guest's food
+allergy from the table to the kitchen and back.
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Safety Over Speed
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+- The system MUST NOT label any dish "safe", "allergen-free", or any equivalent wording.
+- When the system cannot verify an allergy status, it MUST show "Not confirmed" or
+  "Cannot confirm", never a guess or a default positive.
+- When safety and speed conflict, safety wins.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+Rationale: a false assurance about an allergen can harm a guest; an honest "not confirmed"
+cannot.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### II. Traceability
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+- Every requirement MUST have a REQ ID that links to a goal ID in the team goal model.
+- Every task and every code change (commit or pull request) MUST name the REQ IDs it implements.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+Rationale: any line of work can be traced back to the goal that justifies it.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### III. Spec First
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+- `spec.md` is the source of truth for behavior.
+- A change MUST go into the spec first, then the plan, then the code. Code that disagrees with
+  the spec is a defect.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### IV. Simple Prototype
+
+- The prototype MUST use mock dish data, MUST NOT use real login, and MUST NOT call external
+  services.
+- All MUST requirements MUST be built before work starts on any SHOULD requirement.
+
+### V. Testable
+
+- Every requirement MUST have acceptance examples.
+- Work is done only when it passes the acceptance examples of the REQ IDs it names.
+
+## Prototype Scope
+
+This constitution does not choose a tech stack; that decision belongs in the plan. Anything not
+needed to carry an allergy from table to kitchen and back is out of scope unless the spec adds it.
+
+## Development Workflow
+
+Reviewers check each pull request against these principles: no "safe" wording, REQ IDs named,
+spec updated before code, prototype limits respected, and acceptance examples passing.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+- This constitution overrides other project practices where they conflict.
+- It changes only through a pull request reviewed and approved by all three team members.
+- Versioning: MAJOR for removing or redefining a principle, MINOR for adding a principle or
+  section, PATCH for wording fixes.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-11-16 | **Last Amended**: 2026-11-16
