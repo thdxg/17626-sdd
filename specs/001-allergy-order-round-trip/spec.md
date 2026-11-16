@@ -319,6 +319,20 @@ Scenario Outline: Kitchen status reaches the tablet within 5 seconds (REQ-12)
   A-9, kitchen actions appear only for the role each requirement names (station lead for REQ-09,
   REQ-10, REQ-11; expediter for REQ-14). The prototype does not protect against a wrong role pick.
 
+### Dependencies
+
+- D-1: REQ-06 needs REQ-02. The kitchen can show the seat only if the allergy is attached to the
+  seat and its items.
+- D-2: REQ-10 and REQ-11 need REQ-09. The kitchen confirms or rejects an item only after it is
+  acknowledged.
+- D-3: REQ-15 needs REQ-14, and REQ-14 needs REQ-10. "OK to serve" needs a sign-off, and a
+  sign-off needs a confirmed item.
+- D-4: REQ-12, REQ-13 and REQ-15 need the kitchen status changes from REQ-09, REQ-10, REQ-11 and
+  REQ-14.
+- D-5: REQ-04, REQ-05, REQ-07 and REQ-16 read the mock dish records, so they depend on assumption
+  A-1.
+- D-6 (SHOULD): REQ-19 needs REQ-04, REQ-05 and REQ-16. REQ-20 needs REQ-04. REQ-22 needs REQ-14.
+
 ## Requirements *(mandatory)*
 
 All requirements use the EARS form. "SHALL" is used for every requirement; the priority tag says
