@@ -40,5 +40,4 @@
   3. Sending a dish that shows "Contains <allergen>": allowed; kitchen review is the safeguard.
 - REQ-01 to REQ-22 verified identical between spec.md and `docs/initial-spec.md` (22/22).
 - Every acceptance scenario names the REQ ID it tests; all 22 REQs are covered.
-- `docs/goal-model.md` is still a TODO, so G-xx IDs cannot yet be checked against the goal model
-  (Constitution II).
+- The G-xx IDs in the spec should match docs/goal-model.md.

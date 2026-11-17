@@ -40,7 +40,7 @@ All requirements use the EARS form. "SHALL" is used for every requirement; the p
 ### Server tablet: checking dishes
 
 - **REQ-04** [MUST] (G-22): WHEN the server views or adds a dish for a seat with an allergy, IF the dish record lists one of that seat's allergens, THEN THE SYSTEM SHALL show "Contains <allergen>" on the dish. IF the dish record lists none of that seat's allergens, THEN THE SYSTEM SHALL NOT show "Contains".
-- **REQ-05** [MUST] (G-23): IF a dish has no conflict and the kitchen has not confirmed it, THEN THE SYSTEM SHALL label it "Not confirmed". THE SYSTEM SHALL NOT show the words "safe" or "allergen-free" on any screen.
+- **REQ-05** [MUST] (G-23): WHEN the server views a dish for a seat with an allergy, IF the dish has no conflict and the kitchen has not confirmed it, THEN THE SYSTEM SHALL label it "Not confirmed". THE SYSTEM SHALL NOT show the words "safe" or "allergen-free" on any screen.
 - **REQ-16** [MUST] (G-70): IF a dish record marks its allergen information as missing or unverified, THEN THE SYSTEM SHALL label the dish "Cannot confirm" for any seat with an allergy.
 - **REQ-19** [SHOULD] (G-17): WHEN an allergy is recorded for a seat that already has dishes, THE SYSTEM SHALL check those dishes again under REQ-04, REQ-05 and REQ-16.
 - **REQ-20** [SHOULD] (G-25): WHEN a dish shows "Contains <allergen>", THE SYSTEM SHALL offer only the changes that the dish record lists as chef-approved for that allergen.
@@ -91,3 +91,12 @@ All requirements use the EARS form. "SHALL" is used for every requirement; the p
 ### Out of scope
 
 Changes after the order is sent, editing dish records, kitchen questions before ordering, the guest menu app and privacy, cooking steps at the station, and offline or broken-tablet handling.
+
+### Dependencies
+
+- D-1: REQ-06 needs REQ-02. The kitchen can show the seat only if the allergy is attached to the seat and its items.
+- D-2: REQ-10 and REQ-11 need REQ-09. The kitchen confirms or rejects an item only after it is acknowledged.
+- D-3: REQ-15 needs REQ-14, and REQ-14 needs REQ-10. "OK to serve" needs a sign-off, and a sign-off needs a confirmed item.
+- D-4: REQ-12, REQ-13 and REQ-15 need the kitchen status changes from REQ-09, REQ-10, REQ-11 and REQ-14.
+- D-5: REQ-04, REQ-05, REQ-07 and REQ-16 read the mock dish records, so they depend on assumption A-1.
+- D-6 (SHOULD): REQ-19 needs REQ-04, REQ-05 and REQ-16. REQ-20 needs REQ-04. REQ-22 needs REQ-14.

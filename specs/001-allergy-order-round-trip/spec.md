@@ -60,6 +60,11 @@ goal model.
   this spec and in `docs/initial-spec.md`.
 - Q: Should the tablet block, warn, or allow sending a dish that shows "Contains <allergen>"? →
   A: Allow it. The kitchen review is the safeguard, and the guest decides. No requirement added.
+- Q: Does "Not confirmed" (REQ-05) apply to seats with no allergy? → A: No. The kitchen never
+  reviews normal orders, so the label would never go away and the server would learn to ignore
+  it (C-1). REQ-05 now starts with "WHEN the server views a dish for a seat with an allergy", in
+  this spec and in `docs/initial-spec.md`. The ban on "safe" and "allergen-free" still applies
+  to every screen.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -138,8 +143,8 @@ check its label; no kitchen display is needed.
    lists tree nuts, **Then** the dish shows "Contains Tree nuts". (REQ-04)
 2. **Given** seat 3 has a tree-nut allergy, **When** the server views a dish whose record lists
    none of seat 3's allergens, **Then** "Contains" is not shown on it. (REQ-04)
-3. **Given** a dish has no conflict and the kitchen has not confirmed it, **When** the server views
-   it, **Then** it is labelled "Not confirmed". (REQ-05)
+3. **Given** seat 3 has an allergy and a dish has no conflict and the kitchen has not confirmed
+   it, **When** the server views it for seat 3, **Then** it is labelled "Not confirmed". (REQ-05)
 4. **Given** any screen in any state of the round trip, **When** it is displayed, **Then** the
    words "safe" and "allergen-free" do not appear. (REQ-05)
 5. **Given** a dish record marks its allergen information as missing or unverified (the daily
@@ -151,6 +156,8 @@ check its label; no kitchen display is needed.
 7. **Given** a dish shows "Contains <allergen>", **When** the server looks for changes, **Then**
    only the changes the dish record lists as chef-approved for that allergen are offered. (REQ-20,
    SHOULD)
+8. **Given** seat 1 has no allergy, **When** the server views a dish for seat 1, **Then** "Not
+   confirmed" is not shown. (REQ-05)
 
 ---
 
@@ -319,6 +326,20 @@ Scenario Outline: Kitchen status reaches the tablet within 5 seconds (REQ-12)
   A-9, kitchen actions appear only for the role each requirement names (station lead for REQ-09,
   REQ-10, REQ-11; expediter for REQ-14). The prototype does not protect against a wrong role pick.
 
+### Dependencies
+
+- D-1: REQ-06 needs REQ-02. The kitchen can show the seat only if the allergy is attached to the
+  seat and its items.
+- D-2: REQ-10 and REQ-11 need REQ-09. The kitchen confirms or rejects an item only after it is
+  acknowledged.
+- D-3: REQ-15 needs REQ-14, and REQ-14 needs REQ-10. "OK to serve" needs a sign-off, and a
+  sign-off needs a confirmed item.
+- D-4: REQ-12, REQ-13 and REQ-15 need the kitchen status changes from REQ-09, REQ-10, REQ-11 and
+  REQ-14.
+- D-5: REQ-04, REQ-05, REQ-07 and REQ-16 read the mock dish records, so they depend on assumption
+  A-1.
+- D-6 (SHOULD): REQ-19 needs REQ-04, REQ-05 and REQ-16. REQ-20 needs REQ-04. REQ-22 needs REQ-14.
+
 ## Requirements *(mandatory)*
 
 All requirements use the EARS form. "SHALL" is used for every requirement; the priority tag says
@@ -338,7 +359,7 @@ from `docs/initial-spec.md`.
 #### Server tablet: checking dishes
 
 - **REQ-04** [MUST] (G-22): WHEN the server views or adds a dish for a seat with an allergy, IF the dish record lists one of that seat's allergens, THEN THE SYSTEM SHALL show "Contains <allergen>" on the dish. IF the dish record lists none of that seat's allergens, THEN THE SYSTEM SHALL NOT show "Contains".
-- **REQ-05** [MUST] (G-23): IF a dish has no conflict and the kitchen has not confirmed it, THEN THE SYSTEM SHALL label it "Not confirmed". THE SYSTEM SHALL NOT show the words "safe" or "allergen-free" on any screen.
+- **REQ-05** [MUST] (G-23): WHEN the server views a dish for a seat with an allergy, IF the dish has no conflict and the kitchen has not confirmed it, THEN THE SYSTEM SHALL label it "Not confirmed". THE SYSTEM SHALL NOT show the words "safe" or "allergen-free" on any screen.
 - **REQ-16** [MUST] (G-70): IF a dish record marks its allergen information as missing or unverified, THEN THE SYSTEM SHALL label the dish "Cannot confirm" for any seat with an allergy.
 - **REQ-19** [SHOULD] (G-17): WHEN an allergy is recorded for a seat that already has dishes, THE SYSTEM SHALL check those dishes again under REQ-04, REQ-05 and REQ-16.
 - **REQ-20** [SHOULD] (G-25): WHEN a dish shows "Contains <allergen>", THE SYSTEM SHALL offer only the changes that the dish record lists as chef-approved for that allergen.
