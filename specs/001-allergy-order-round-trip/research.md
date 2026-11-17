@@ -126,13 +126,15 @@ noted in R-6 and R-7 when it installs them.
 
 ## R-9: Where "Not confirmed" is shown (REQ-05 interpretation)
 
-- **Decision**: On the tablet, every dish row and every order item that is not "Confirmed"
-  (REQ-13) and that shows neither "Contains" nor "Cannot confirm" gets "Not confirmed". This
-  applies to every seat, including seats with no allergy.
-- **Rationale**: REQ-05 is written without a seat condition. Showing "Not confirmed" more often
-  can never mislead (Constitution I), while hiding it could look like an all-clear.
-- **Alternatives considered**: Showing it only on seats with an allergy reads more cleanly but
-  depends on a condition the spec does not state.
+- **Decision**: On the tablet, for a seat with an allergy, every dish row and every order item
+  that is not "Confirmed" (REQ-13) and that shows neither "Contains" nor "Cannot confirm" gets
+  "Not confirmed". For a seat with no allergy, "Not confirmed" is not shown (US2 scenario 8).
+- **Rationale**: The spec was clarified (Clarifications, 2026-11-16): REQ-05 now starts with
+  "WHEN the server views a dish for a seat with an allergy". The kitchen never reviews dishes for
+  seats with no allergy, so the label would never change there and Kayla could stop reading it
+  (C-1).
+- **Alternatives considered**: Showing it on every seat (the first version of this decision,
+  based on the original REQ-05 wording). Replaced when the spec changed.
 
 ## R-10: Allergy snapshot when the order is sent
 

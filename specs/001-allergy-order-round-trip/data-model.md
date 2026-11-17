@@ -122,8 +122,9 @@ Rules are applied in this order. The result is a list, because several can apply
 2. If `seatAllergies` is non-empty and `dish.allergenInfo ≠ "complete"`: add `"Cannot confirm"`
    (REQ-16).
 3. If the item was sent as an allergy order, add the kitchen status label (table below).
-4. If no "Contains", no "Cannot confirm" (from step 2 or the kitchen), and kitchen status ≠
-   Confirmed: add `"Not confirmed"` (REQ-05, R-9).
+4. If `seatAllergies` is non-empty, there is no "Contains", no "Cannot confirm" (from step 2 or
+   the kitchen), and kitchen status ≠ Confirmed: add `"Not confirmed"` (REQ-05, R-9). A seat with
+   no allergy gets no "Not confirmed" (US2 scenario 8).
 
 ### Tablet kitchen status label (REQ-12, REQ-13, REQ-15)
 
