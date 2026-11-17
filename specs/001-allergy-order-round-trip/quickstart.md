@@ -37,6 +37,7 @@ Expected: every test passes. Test names start with the REQ IDs they cover, so
 | US2 | 3 | REQ-05 | `labels.test.ts` | unit |
 | US2 | 4 | REQ-05 | `no-safe-wording.test.tsx` (SC-002 sweep) | RTL |
 | US2 | 5 | REQ-16 | `labels.test.ts` | unit |
+| US2 | 8 | REQ-05 | `labels.test.ts` | unit |
 | US2 | 6, 7 | REQ-19, REQ-20 (SHOULD) | `us2.should.test.tsx` | RTL |
 | US3 | 1 | REQ-06 | `kitchen.test.ts`, `us3.kitchen.test.tsx` | unit + RTL |
 | US3 | 2 | REQ-07 | `kitchen.test.ts` | unit |
