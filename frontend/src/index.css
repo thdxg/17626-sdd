@@ -1,1 +1,152 @@
-body { margin: 0; }
+:root {
+  --bg: #f6f6f4;
+  --panel: #ffffff;
+  --ink: #1d1d1b;
+  --muted: #5f5f5a;
+  --line: #d9d9d4;
+  --accent: #1f5fbf;
+  --accent-ink: #ffffff;
+  --pressed: #dbe7fb;
+  --alarm: #b3261e;
+  --alarm-ink: #ffffff;
+  --tag: #eeeeea;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+button {
+  font: inherit;
+  min-height: 44px;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+}
+button[aria-pressed='true'] {
+  background: var(--pressed);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+button.big {
+  min-width: 10rem;
+  min-height: 64px;
+  font-size: 1.1rem;
+}
+
+input[type='text'] {
+  font: inherit;
+  padding: 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+h1 { font-size: 1.3rem; margin: 0; }
+h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
+h3 { font-size: 0.95rem; margin: 0.5rem 0 0.25rem; }
+ul { list-style: none; margin: 0; padding: 0; }
+
+.row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.6rem; }
+.chip { min-height: 44px; }
+
+.role-menu { padding: 2rem 1rem; max-width: 40rem; margin: 0 auto; }
+
+.screen { padding: 0.75rem 1rem 2rem; }
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+.header-role { color: var(--muted); }
+.header a { color: var(--accent); }
+
+.panel, .seat-view {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+.server-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+}
+.seat-strip { margin-top: 0.5rem; }
+.seat { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; }
+.seat-allergens { color: var(--alarm); font-weight: 600; }
+.allergy-panel .primary { margin-top: 0.5rem; }
+.note { margin: 0.25rem 0; }
+.note label { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.4rem; }
+.allergy-list li { padding: 0.3rem 0; border-top: 1px solid var(--line); }
+
+.dish-list li, .order-seat li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.4rem 0;
+  border-top: 1px solid var(--line);
+}
+.dish-name { font-weight: 600; margin-right: auto; }
+.labels { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; }
+.tag {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--tag);
+  font-size: 0.85rem;
+}
+.tag.allergy-order { background: var(--alarm); color: var(--alarm-ink); }
+.item-allergies { width: 100%; color: var(--muted); font-size: 0.85rem; }
+.changes { width: 100%; font-size: 0.85rem; }
+
+.ticket-list { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr)); }
+.ticket {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+.ticket.allergy { border-left: 6px solid var(--alarm); }
+.ticket-head { display: flex; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem; }
+.alarm {
+  margin: 0.25rem 0 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--alarm);
+  color: var(--alarm-ink);
+  font-weight: 700;
+  border-radius: 6px;
+}
+.alarm[data-flashing='true'] { animation: flash 1s steps(2, start) infinite; }
+@keyframes flash {
+  to { background: var(--panel); color: var(--alarm); }
+}
+.kitchen-item { padding: 0.5rem 0; border-top: 1px solid var(--line); }
+.item-head { display: flex; justify-content: space-between; gap: 0.5rem; }
+.status { font-weight: 700; }
+.item-lines { display: flex; flex-wrap: wrap; gap: 0.3rem 0.8rem; margin: 0.25rem 0; }
+.record { margin: 0.2rem 0; font-size: 0.85rem; color: var(--muted); }
+.actions { margin-top: 0.3rem; }
+.cannot-confirm-form { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-top: 0.4rem; }
