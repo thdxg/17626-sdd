@@ -97,10 +97,11 @@ describe('US3 kitchen display', () => {
   })
 
   it('REQ-06: an allergy item shows "Traces: yes" as text when the seat allergy says traces matter (scenario 8)', () => {
-    const { state } = kitchenState()
+    const { state, ticket } = kitchenState()
     const r = renderApp({ path: '/kitchen', role: 'station lead', state })
     for (const dish of ['walnut-salad', 'steak-frites']) expect(text(kitchenItem(r.container, dish, 3))).toContain('Traces: yes')
-    expect(text(kitchenItem(r.container, 'green-salad', 2))).not.toContain('Traces')
+    const card = ticketCards(r.container).find((c) => c.dataset.ticket === ticket.id)!
+    expect(text(kitchenItem(card, 'green-salad', 2))).not.toContain('Traces')
   })
 
   it('REQ-06: "Traces: no" when the seat allergy says traces do not matter', () => {
