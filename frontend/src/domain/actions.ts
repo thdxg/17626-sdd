@@ -77,6 +77,7 @@ function addItem(state: AppState, a: Extract<Action, { type: 'addItem' }>, now: 
     review: null,
     cannotConfirm: null,
     signOff: null,
+    pickedChange: null,
   }
   return { ...state, orderItems: { ...state.orderItems, [item.id]: item } }
 }

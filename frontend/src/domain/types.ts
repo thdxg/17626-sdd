@@ -92,6 +92,8 @@ export interface OrderItem {
   review: { role: 'station lead'; at: string } | null
   cannotConfirm: { role: 'station lead'; reason: string; at: string } | null
   signOff: { role: 'expediter'; at: string } | null
+  /** V2: one chef-approved change picked on the draft (REQ-20, R-16); fixed after send */
+  pickedChange: string | null
 }
 
 export interface Ticket {
@@ -103,7 +105,8 @@ export interface Ticket {
 }
 
 export interface AppState {
-  schemaVersion: 1
+  /** 1 in V1; 2 in V2 (pickedChange, R-14) */
+  schemaVersion: 2
   revision: number
   tables: Table[]
   seats: Record<SeatKey, Seat>

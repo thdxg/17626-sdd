@@ -253,7 +253,7 @@ description: "Task list for Allergy Order Round Trip"
 
 ### Setup for V2
 
-- [ ] T074 Add `pickedChange: string | null` to `OrderItem` in `frontend/src/domain/types.ts`, set it to `null` in `addItem` (`frontend/src/domain/actions.ts`) and in any seeded or fixture item (`frontend/src/data/seed.ts`, `frontend/src/test/fixtures.ts`), and bump `schemaVersion` from 1 to 2 in the types, the seed and the store's reseed check (`frontend/src/store/store.ts`). Add a store test: a stored document with `schemaVersion: 1` is replaced by the seed (research R-14). — REQ: REQ-20 (A-10)
+- [X] T074 Add `pickedChange: string | null` to `OrderItem` in `frontend/src/domain/types.ts`, set it to `null` in `addItem` (`frontend/src/domain/actions.ts`) and in any seeded or fixture item (`frontend/src/data/seed.ts`, `frontend/src/test/fixtures.ts`), and bump `schemaVersion` from 1 to 2 in the types, the seed and the store's reseed check (`frontend/src/store/store.ts`). Add a store test: a stored document with `schemaVersion: 1` is replaced by the seed (research R-14). — REQ: REQ-20 (A-10)
 
 ### Tests for V2 (write first, confirm they fail)
 

@@ -97,6 +97,7 @@ describe('recordAllergy / addItem', () => {
       review: null,
       cannotConfirm: null,
       signOff: null,
+      pickedChange: null,
     })
   })
 

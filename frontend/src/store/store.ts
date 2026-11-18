@@ -67,7 +67,7 @@ function parseState(raw: string | null): AppState | null {
     if (
       !doc ||
       typeof doc !== 'object' ||
-      doc.schemaVersion !== 1 ||
+      doc.schemaVersion !== 2 ||
       typeof doc.revision !== 'number' ||
       !Array.isArray(doc.tables) ||
       !doc.seats ||

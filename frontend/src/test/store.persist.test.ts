@@ -24,10 +24,17 @@ describe('store persistence (A-10)', () => {
     expect(store.getSnapshot()).toEqual(createSeed())
   })
 
-  it('REQ-12: schemaVersion 2 is reseeded with revision 0', () => {
-    const { store } = makeStore(JSON.stringify({ ...createSeed(), schemaVersion: 2, revision: 9 }))
-    expect(store.getSnapshot().schemaVersion).toBe(1)
+  it('REQ-12: an unknown schemaVersion (3) is reseeded with revision 0', () => {
+    const { store } = makeStore(JSON.stringify({ ...createSeed(), schemaVersion: 3, revision: 9 }))
+    expect(store.getSnapshot().schemaVersion).toBe(2)
     expect(store.getSnapshot().revision).toBe(0)
+  })
+
+  it('REQ-20: a stored V1 document (schemaVersion 1) is replaced by the V2 seed (R-14)', () => {
+    const v1 = { ...createSeed(), schemaVersion: 1, revision: 12, tickets: [] }
+    const { store, storage } = makeStore(JSON.stringify(v1))
+    expect(store.getSnapshot()).toEqual(createSeed())
+    expect(JSON.parse(storage.getItem(STATE_KEY)!)).toEqual(createSeed())
   })
 
   it('REQ-12: a valid document is kept as is', () => {

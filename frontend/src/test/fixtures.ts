@@ -48,6 +48,7 @@ export function withDraftItem(state: AppState, tableId: string, seat: number, di
     review: null,
     cannotConfirm: null,
     signOff: null,
+    pickedChange: null,
   }
   return { ...state, orderItems: { ...state.orderItems, [item.id]: item } }
 }
@@ -60,6 +61,8 @@ export interface FixtureItem {
   kitchenStatus?: KitchenStatus
   signOff?: boolean
   cannotConfirm?: string
+  /** V2 (REQ-20): the change the server picked before sending. */
+  pickedChange?: string
 }
 
 /**
@@ -94,6 +97,7 @@ export function withSentAllergyTicket(
           ? { role: 'station lead', reason: fi.cannotConfirm ?? 'Supplier sheet missing', at: sentAt }
           : null,
       signOff: status === 'Confirmed' && fi.signOff ? { role: 'expediter', at: sentAt } : null,
+      pickedChange: fi.pickedChange ?? null,
     }
   })
   const acknowledged = opts.acknowledged ?? items.some((i) => i.kitchenStatus !== null && i.kitchenStatus !== 'Sent')
