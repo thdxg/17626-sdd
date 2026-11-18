@@ -30,7 +30,16 @@ The screens share state only within one browser (spec assumption A-10). A second
 
 ## What changed from V1 to V2
 
-_TODO: summary of the requirements-level change(s), with links to the spec diff and the learning log, Section 3._
+We evaluated V1 against every acceptance scenario ([`docs/traceability.md`](docs/traceability.md)). Four findings were requirements issues, not code defects, so we changed the spec first ([Clarifications, Session 2026-11-17](specs/001-allergy-order-round-trip/spec.md#session-2026-11-17-v2-from-the-v1-evaluation)), then the plan and tasks (Phase 11 of [`tasks.md`](specs/001-allergy-order-round-trip/tasks.md)), then the code. The requirement IDs did not change.
+
+| REQ | V1 | V2 |
+|---|---|---|
+| REQ-10 | A dish that lists the seat's allergen (walnut salad for a tree-nut seat) could be confirmed and reach "OK to serve" | The kitchen gets no "Confirm" for that dish, only "Cannot confirm" with a reason. New success criterion SC-008 |
+| REQ-20 | Chef-approved changes were shown as text only (SHOULD) | Now MUST. The server picks one change, and the kitchen ticket shows it. The kitchen still cannot confirm the dish, because the dish record does not say the change removes the allergen (conflict C-12) |
+| REQ-06 | The server recorded whether traces matter, but the kitchen never saw it | Each allergy item on the kitchen display shows "Traces: yes" or "Traces: no" |
+| REQ-08 | An allergy ticket dropped to its sent-time place once acknowledged | It stays above normal tickets until every allergy item is signed off or marked "Cannot confirm" |
+
+The goal model was updated to match (G-25, G-30, G-32, new G-89; see [`docs/goal-model.md`](docs/goal-model.md)). Compare the two versions: [`v1...v2`](https://github.com/thdxg/17626-sdd/compare/v1...v2). What we learned from these changes is in the learning log, [Section 3](docs/learning-log.md#3-revisions-and-learning).
 
 ## Repository structure
 
