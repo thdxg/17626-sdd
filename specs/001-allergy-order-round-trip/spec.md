@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-16
 
-**Status**: Draft
+**Status**: V2
 
 **Input**: User description: "Create the feature spec for "Allergy Order Round Trip" from
 docs/initial-spec.md."
@@ -62,9 +62,32 @@ goal model.
   A: Allow it. The kitchen review is the safeguard, and the guest decides. No requirement added.
 - Q: Does "Not confirmed" (REQ-05) apply to seats with no allergy? → A: No. The kitchen never
   reviews normal orders, so the label would never go away and the server would learn to ignore
-  it (C-1). REQ-05 now starts with "WHEN the server views a dish for a seat with an allergy", in
+  it (C-1). REQ-05 now starts with "When the server views a dish for a seat with an allergy", in
   this spec and in `docs/initial-spec.md`. The ban on "safe" and "allergen-free" still applies
   to every screen.
+
+### Session 2026-11-17 (V2, from the V1 evaluation)
+
+- Q: Should the kitchen see whether traces matter? → A: Yes. The server records it (REQ-01), but
+  V1 never showed it to the kitchen, and the kitchen is the one that handles cross-contact. REQ-06
+  now includes "whether traces matter", in this spec and in `docs/initial-spec.md`. This revisits
+  C-2: we recorded traces for the guest but did not carry them to the kitchen.
+- Q: May the kitchen confirm a dish that lists the seat's allergen? → A: No. In V1 a walnut salad
+  for a tree-nut seat could be confirmed and reach "OK to serve". A sentence was added to the end
+  of REQ-10 (ID kept; now traces to G-38, G-70 and G-89), in this spec and in
+  `docs/initial-spec.md`. This revisits the 2026-11-16 answer that the kitchen review is the
+  safeguard for a "Contains" dish: V1 showed the review alone did not stop it.
+- Q: Can the server use a chef-approved change for a "Contains" dish? → A: Yes, in a small way.
+  REQ-20 is now MUST (ID kept): the server picks one chef-approved change, and the kitchen display
+  shows it on the allergy item. REQ-10 does not change, so the kitchen still cannot confirm the
+  dish. The mock dish record does not say that a change removes the allergen, and no stakeholder
+  told us that it does. Safety wins over the quick change (Constitution I). This is kept as
+  conflict C-12.
+- Q: Should an allergy ticket keep its place after "Acknowledge"? → A: Yes. It stays above normal
+  tickets until every allergy item is signed off or marked "Cannot confirm". Antoine asked to keep
+  it prominent until the expediter acts on it (Antoine L73), and the expediter acts at sign-off,
+  so V1 read this too narrowly. REQ-08 has a second sentence now (ID kept), in this spec and in
+  `docs/initial-spec.md`. This revisits C-3.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -129,13 +152,13 @@ Before sending the order, Kayla looks at dishes for seat 3. Dishes whose record 
 show "Contains Tree nuts". Dishes with no known conflict show "Not confirmed", never "safe". The
 daily special with missing allergen information shows "Cannot confirm".
 
-**Requirements**: REQ-04, REQ-05, REQ-16 (MUST); REQ-19, REQ-20 (SHOULD)
+**Requirements**: REQ-04, REQ-05, REQ-16, REQ-20 (MUST); REQ-19 (SHOULD)
 
 **Why this priority**: This is where the system is most tempted to reassure the guest. It must
 inform the server without ever claiming a dish is safe (Constitution I).
 
 **Independent Test**: With the mock menu (A-2) and a seat with an allergy, view each dish and
-check its label; no kitchen display is needed.
+check its label; no kitchen display is needed, except for scenario 9.
 
 **Acceptance Scenarios**:
 
@@ -154,17 +177,20 @@ check its label; no kitchen display is needed.
    **Then** those dishes are checked again and their labels follow REQ-04, REQ-05 and REQ-16.
    (REQ-19, SHOULD)
 7. **Given** a dish shows "Contains <allergen>", **When** the server looks for changes, **Then**
-   only the changes the dish record lists as chef-approved for that allergen are offered. (REQ-20,
-   SHOULD)
+   only the changes the dish record lists as chef-approved for that allergen are offered. (REQ-20)
 8. **Given** seat 1 has no allergy, **When** the server views a dish for seat 1, **Then** "Not
    confirmed" is not shown. (REQ-05)
+9. **Given** a dish shows "Contains Tree nuts" and its record lists a chef-approved change for tree
+   nuts, **When** the server picks that change and sends the order, **Then** the kitchen display
+   shows the picked change on that allergy item, and "Confirm" is still not offered for it.
+   (REQ-20, REQ-10)
 
 ---
 
 ### User Story 3 - Kitchen notices and acknowledges the allergy ticket (Priority: P1)
 
 Kayla sends the order. On the kitchen display, the ticket jumps to the top labelled "ALLERGY – NOT
-ACKNOWLEDGED". Each allergy item shows the allergen, severity, and seat number as text, and the
+ACKNOWLEDGED". Each allergy item shows the allergen, severity, traces, and seat number as text, and the
 fried dish shows "Cross-contact: fryer". The station lead taps "Acknowledge".
 
 **Requirements**: REQ-06, REQ-07, REQ-08, REQ-09 (MUST); REQ-21, REQ-22 (SHOULD)
@@ -194,6 +220,11 @@ ticket's position, labels, and status after "Acknowledge".
    used for it. (REQ-21, SHOULD)
 7. **Given** an allergy item is not signed off, **When** any user tries to clear it, **Then** it
    stays on the kitchen display. (REQ-22, SHOULD)
+8. **Given** seat 3's allergy says traces matter, **When** its allergy item appears on the kitchen
+   display, **Then** it shows "Traces: yes" as text. (REQ-06)
+9. **Given** an acknowledged allergy ticket has an allergy item that is not signed off and not
+   marked "Cannot confirm", **When** newer normal tickets arrive, **Then** the allergy ticket stays
+   above all normal tickets. (REQ-08)
 
 **Boundary examples (REQ-21, SHOULD, escalation time: 60 seconds, A-4)**:
 
@@ -247,6 +278,9 @@ offered at each step and what is saved.
    sign-off and the time are saved. (REQ-14)
 7. **Given** an allergy item whose status is Sent, Acknowledged, or Cannot confirm, **When** the
    expediter views it, **Then** "Sign off" is not offered. (REQ-14)
+8. **Given** an acknowledged allergy item for seat 3 (tree nuts) whose dish record lists tree nuts,
+   **When** the station lead views it, **Then** "Confirm" is not offered and "Cannot confirm" is.
+   (REQ-10)
 
 ---
 
@@ -318,7 +352,12 @@ Scenario Outline: Kitchen status reaches the tablet within 5 seconds (REQ-12)
   (REQ-10). The station lead can only mark it "Cannot confirm" with a reason (REQ-11), so it can
   never reach "OK to serve" (REQ-14, REQ-15).
 - **Server sends a dish that shows "Contains <allergen>"**: the system allows it, with no block
-  or warning. The kitchen review (REQ-10, REQ-11) is the safeguard, and the guest decides.
+  or warning, and the guest decides. But the kitchen cannot confirm it (REQ-10), so it can only
+  end as "Cannot confirm" and never reaches "OK to serve" (REQ-14, REQ-15). This is the same when
+  the server picked a chef-approved change: the kitchen sees the change (REQ-20), but "Confirm" is
+  still not offered (C-12).
+- **Acknowledged ticket with one allergy item left**: it stays above normal tickets until that
+  item is signed off or marked "Cannot confirm" (REQ-08).
 - **Status changes faster than the tablet updates** (e.g., Acknowledged then Confirmed within 5
   seconds): the tablet must end on the latest status and must never show "Confirmed" or "OK to
   serve" before they are true (REQ-13, REQ-15).
@@ -338,11 +377,12 @@ Scenario Outline: Kitchen status reaches the tablet within 5 seconds (REQ-12)
   REQ-14.
 - D-5: REQ-04, REQ-05, REQ-07 and REQ-16 read the mock dish records, so they depend on assumption
   A-1.
-- D-6 (SHOULD): REQ-19 needs REQ-04, REQ-05 and REQ-16. REQ-20 needs REQ-04. REQ-22 needs REQ-14.
+- D-6 (SHOULD): REQ-19 needs REQ-04, REQ-05 and REQ-16. REQ-22 needs REQ-14.
+- D-7 (V2): REQ-20 needs REQ-04. REQ-08 needs REQ-11 and REQ-14, because an acknowledged ticket stays above normal tickets until its allergy items are signed off or marked "Cannot confirm".
 
 ## Requirements *(mandatory)*
 
-All requirements use the EARS form. "SHALL" is used for every requirement; the priority tag says
+All requirements use the EARS form. "shall" is used for every requirement; the priority tag says
 whether it is built in V1. The IDs, priorities, goal IDs, and wording below are copied unchanged
 from `docs/initial-spec.md`.
 
@@ -350,40 +390,40 @@ from `docs/initial-spec.md`.
 
 #### Server tablet: recording the allergy
 
-- **REQ-01** [MUST] (G-9): WHEN the server records an allergy for a seat, THE SYSTEM SHALL let the server choose the allergens from a fixed list, the severity (severe allergy, intolerance, preference, or unknown), and whether traces matter (yes or no). THE SYSTEM SHALL let the server add a free-text note, and SHALL NOT require it.
-- **REQ-02** [MUST] (G-10): WHEN an allergy is recorded for a seat, THE SYSTEM SHALL attach it to that seat and to every item ordered for that seat, and SHALL NOT attach it to any other seat.
-- **REQ-03** [MUST] (G-12): IF the severity is severe allergy, intolerance, or unknown, THEN THE SYSTEM SHALL handle every item for that seat as an allergy order.
-- **REQ-17** [MUST] (G-84): WHEN the server records one allergen with its severity and trace setting, THE SYSTEM SHALL need 4 taps or fewer, starting from the seat view, with no extra screen and no typing, so that it can be done within 10 seconds.
-- **REQ-18** [SHOULD] (G-13): IF the severity is preference, THEN THE SYSTEM SHALL handle the item as a normal modification and SHALL NOT handle it as an allergy order.
+- **REQ-01** [MUST] (G-9): When the server records an allergy for a seat, the system shall let the server choose the allergens from a fixed list, the severity (severe allergy, intolerance, preference, or unknown), and whether traces matter (yes or no). The system shall let the server add a free-text note, and shall not require it.
+- **REQ-02** [MUST] (G-10): When an allergy is recorded for a seat, the system shall attach it to that seat and to every item ordered for that seat, and shall not attach it to any other seat.
+- **REQ-03** [MUST] (G-12): If the severity is severe allergy, intolerance, or unknown, then the system shall handle every item for that seat as an allergy order.
+- **REQ-17** [MUST] (G-84): When the server records one allergen with its severity and trace setting, the system shall need 4 taps or fewer, starting from the seat view, with no extra screen and no typing, so that it can be done within 10 seconds.
+- **REQ-18** [SHOULD] (G-13): If the severity is preference, then the system shall handle the item as a normal modification and shall not handle it as an allergy order.
 
 #### Server tablet: checking dishes
 
-- **REQ-04** [MUST] (G-22): WHEN the server views or adds a dish for a seat with an allergy, IF the dish record lists one of that seat's allergens, THEN THE SYSTEM SHALL show "Contains <allergen>" on the dish. IF the dish record lists none of that seat's allergens, THEN THE SYSTEM SHALL NOT show "Contains".
-- **REQ-05** [MUST] (G-23): WHEN the server views a dish for a seat with an allergy, IF the dish has no conflict and the kitchen has not confirmed it, THEN THE SYSTEM SHALL label it "Not confirmed". THE SYSTEM SHALL NOT show the words "safe" or "allergen-free" on any screen.
-- **REQ-16** [MUST] (G-70): IF a dish record marks its allergen information as missing or unverified, THEN THE SYSTEM SHALL label the dish "Cannot confirm" for any seat with an allergy.
-- **REQ-19** [SHOULD] (G-17): WHEN an allergy is recorded for a seat that already has dishes, THE SYSTEM SHALL check those dishes again under REQ-04, REQ-05 and REQ-16.
-- **REQ-20** [SHOULD] (G-25): WHEN a dish shows "Contains <allergen>", THE SYSTEM SHALL offer only the changes that the dish record lists as chef-approved for that allergen.
+- **REQ-04** [MUST] (G-22): When the server views or adds a dish for a seat with an allergy, if the dish record lists one of that seat's allergens, then the system shall show "Contains <allergen>" on the dish. If the dish record lists none of that seat's allergens, then the system shall not show "Contains".
+- **REQ-05** [MUST] (G-23): When the server views a dish for a seat with an allergy, if the dish has no conflict and the kitchen has not confirmed it, then the system shall label it "Not confirmed". The system shall not show the words "safe" or "allergen-free" on any screen.
+- **REQ-16** [MUST] (G-70): If a dish record marks its allergen information as missing or unverified, then the system shall label the dish "Cannot confirm" for any seat with an allergy.
+- **REQ-19** [SHOULD] (G-17): When an allergy is recorded for a seat that already has dishes, the system shall check those dishes again under REQ-04, REQ-05 and REQ-16.
+- **REQ-20** [MUST] (G-25): When a dish shows "Contains <allergen>", the system shall offer only the changes that the dish record lists as chef-approved for that allergen, and shall let the server pick one. When the order is sent, the system shall show the picked change on that allergy item on the kitchen display.
 
 #### Kitchen display: noticing the ticket
 
-- **REQ-06** [MUST] (G-30): WHEN an allergy order is sent, THE SYSTEM SHALL show the allergen name, the severity, and the seat number as text on each allergy item on the kitchen display.
-- **REQ-07** [MUST] (G-31): IF a dish record lists shared equipment (fryer, base, or utensil), THEN THE SYSTEM SHALL show "Cross-contact: <equipment>" on that allergy item on the kitchen display.
-- **REQ-08** [MUST] (G-32): WHILE an allergy ticket is not acknowledged, THE SYSTEM SHALL show it at the top of the kitchen display with the label "ALLERGY – NOT ACKNOWLEDGED".
-- **REQ-09** [MUST] (G-34): WHEN the station lead taps "Acknowledge" on an allergy ticket, THE SYSTEM SHALL set the kitchen status of its allergy items to "Acknowledged".
-- **REQ-21** [SHOULD] (G-33): WHEN a new allergy ticket arrives, THE SYSTEM SHALL play one sound. IF the ticket is not acknowledged within 60 seconds, THEN THE SYSTEM SHALL make the "ALLERGY – NOT ACKNOWLEDGED" label flash. THE SYSTEM SHALL NOT use the allergy label for non-allergy changes.
-- **REQ-22** [SHOULD] (G-53): IF an allergy item is not signed off, THEN THE SYSTEM SHALL NOT let any user clear it from the kitchen display.
+- **REQ-06** [MUST] (G-30): When an allergy order is sent, the system shall show the allergen name, the severity, whether traces matter, and the seat number as text on each allergy item on the kitchen display.
+- **REQ-07** [MUST] (G-31): If a dish record lists shared equipment (fryer, base, or utensil), then the system shall show "Cross-contact: <equipment>" on that allergy item on the kitchen display.
+- **REQ-08** [MUST] (G-32): While an allergy ticket is not acknowledged, the system shall show it at the top of the kitchen display with the label "ALLERGY – NOT ACKNOWLEDGED". While an acknowledged allergy ticket has an allergy item that is not signed off and not marked "Cannot confirm", the system shall show it above all normal tickets.
+- **REQ-09** [MUST] (G-34): When the station lead taps "Acknowledge" on an allergy ticket, the system shall set the kitchen status of its allergy items to "Acknowledged".
+- **REQ-21** [SHOULD] (G-33): When a new allergy ticket arrives, the system shall play one sound. If the ticket is not acknowledged within 60 seconds, then the system shall make the "ALLERGY – NOT ACKNOWLEDGED" label flash. The system shall not use the allergy label for non-allergy changes.
+- **REQ-22** [SHOULD] (G-53): If an allergy item is not signed off, then the system shall not let any user clear it from the kitchen display.
 
 #### Kitchen display: review and sign-off
 
-- **REQ-10** [MUST] (G-38, G-70): WHEN the station lead taps "Confirm" on an acknowledged allergy item, THE SYSTEM SHALL set its kitchen status to "Confirmed" and save the reviewer's role name and the time. IF the item is not acknowledged, THEN THE SYSTEM SHALL NOT offer "Confirm". IF the dish record marks its allergen information as missing or unverified, THEN THE SYSTEM SHALL NOT offer "Confirm".
-- **REQ-11** [MUST] (G-39): WHEN the station lead taps "Cannot confirm" on an acknowledged allergy item and enters a reason, THE SYSTEM SHALL set its kitchen status to "Cannot confirm" and save the reason. THE SYSTEM SHALL NOT save "Cannot confirm" without a reason.
-- **REQ-14** [MUST] (G-50): WHEN the expediter taps "Sign off" on a confirmed allergy item, THE SYSTEM SHALL save the sign-off and the time. IF the item is not "Confirmed", THEN THE SYSTEM SHALL NOT offer "Sign off".
+- **REQ-10** [MUST] (G-38, G-70, G-89): When the station lead taps "Confirm" on an acknowledged allergy item, the system shall set its kitchen status to "Confirmed" and save the reviewer's role name and the time. If the item is not acknowledged, then the system shall not offer "Confirm". If the dish record marks its allergen information as missing or unverified, then the system shall not offer "Confirm". If the dish record lists one of the seat's allergens, then the system shall not offer "Confirm".
+- **REQ-11** [MUST] (G-39): When the station lead taps "Cannot confirm" on an acknowledged allergy item and enters a reason, the system shall set its kitchen status to "Cannot confirm" and save the reason. The system shall not save "Cannot confirm" without a reason.
+- **REQ-14** [MUST] (G-50): When the expediter taps "Sign off" on a confirmed allergy item, the system shall save the sign-off and the time. If the item is not "Confirmed", then the system shall not offer "Sign off".
 
 #### Server tablet: kitchen status
 
-- **REQ-12** [MUST] (G-41): WHEN the kitchen status of an allergy item changes, THE SYSTEM SHALL show the new kitchen status on the server tablet within 5 seconds, together with the reason if it is "Cannot confirm".
-- **REQ-13** [MUST] (G-43): IF the kitchen status of an allergy item is not "Confirmed", THEN THE SYSTEM SHALL NOT show "Confirmed" for it on the tablet.
-- **REQ-15** [MUST] (G-51): WHEN an allergy item is signed off, THE SYSTEM SHALL show "OK to serve" for it on the tablet. IF it is not signed off, THEN THE SYSTEM SHALL NOT show "OK to serve".
+- **REQ-12** [MUST] (G-41): When the kitchen status of an allergy item changes, the system shall show the new kitchen status on the server tablet within 5 seconds, together with the reason if it is "Cannot confirm".
+- **REQ-13** [MUST] (G-43): If the kitchen status of an allergy item is not "Confirmed", then the system shall not show "Confirmed" for it on the tablet.
+- **REQ-15** [MUST] (G-51): When an allergy item is signed off, the system shall show "OK to serve" for it on the tablet. If it is not signed off, then the system shall not show "OK to serve".
 
 ### Key Entities
 
@@ -394,7 +434,8 @@ from `docs/initial-spec.md`.
 - **Dish record (mock)**: read-only. Listed allergens, allergen information status (complete,
   missing, or unverified), shared equipment (fryer, base, utensil), and chef-approved changes per
   allergen.
-- **Order item**: a dish ordered for a seat. It is an allergy order when REQ-03 applies.
+- **Order item**: a dish ordered for a seat. It is an allergy order when REQ-03 applies. It can
+  hold one chef-approved change picked by the server (REQ-20).
 - **Allergy ticket**: a sent order as shown on the kitchen display, containing one or more
   allergy items. Has an acknowledged / not acknowledged state.
 - **Kitchen status**: per allergy item; one of Sent, Acknowledged, Confirmed, Cannot confirm.
@@ -421,6 +462,8 @@ from `docs/initial-spec.md`.
   confirm, sign off, "OK to serve" on the tablet — using only the mock data and the role menu.
 - **SC-007**: Every acceptance scenario for a MUST requirement passes before work starts on any
   SHOULD requirement.
+- **SC-008**: No allergy item whose dish lists the seat's allergen shows "Confirmed" or "OK to
+  serve" on the tablet. (REQ-10)
 
 ## Assumptions
 
@@ -452,7 +495,8 @@ Added while writing this spec (do not change any requirement):
 
 - C-1: The tablet shows "Not confirmed" instead of "safe" (REQ-05, REQ-13).
 - C-2: Fixed-list choices on one screen, with an optional note (REQ-01, REQ-17).
-- C-3: The ticket stays at the top until acknowledged (REQ-08). The sound limit is SHOULD
+- C-3: The ticket stays at the top until acknowledged, and above normal tickets until every
+  allergy item is signed off or marked "Cannot confirm" (REQ-08). The sound limit is SHOULD
   (REQ-21).
 - C-4: One tap saves the reviewer's name and the time (REQ-10).
 - C-5 (unresolved): The guest wants the kitchen to review the dish before ordering, but the
@@ -462,7 +506,11 @@ Added while writing this spec (do not change any requirement):
 - C-6: "Acknowledged" and "Confirmed" are separate kitchen statuses (Glossary, REQ-09, REQ-10).
 - C-7: An intolerance is handled as an allergy order for now (REQ-03). We need to ask the
   stakeholders.
-- C-8: Only chef-approved changes are offered (REQ-20, SHOULD).
+- C-8: Only chef-approved changes are offered, and the picked one is shown to the kitchen (REQ-20).
+- C-12 (V2): The kitchen never confirms a dish that lists the seat's allergen (REQ-10), even if
+  the server picked a chef-approved change (REQ-20). The kitchen sees the picked change, but the
+  dish record does not say the change removes the allergen. Safety wins for now; this can be
+  relaxed when the dish record says which change removes which allergen.
 
 ## Out of Scope
 

@@ -107,9 +107,10 @@ g22 = reg(MaintainGoal("G-22: DishFlagged <b>Iff</b> DishConflictsWithRecordedAl
           "E G-51, G-56; Y G-55", "Y: K[01:10:40], K[01:12:19], A[02:16:55]", "MUST")
 g23 = reg(AchieveGoal("G-23: NonConflictingDishesShownAsUnconfirmedCandidates", performs=by(TABLET), leaf=True),
           "S G-16 (weakened); Y G-60 (weakened, see C-1); E G-51", "S: Kayla L12, L38, L100 | Y: K[01:06:52]", "MUST")
-g25 = reg(AchieveGoal("G-25: OnlyChefPreApprovedModificationsOffered <b>If</b> DishFlagged",
+# V2: the server can pick the change, and it is sent with the item (REQ-20, now MUST). Found in the V1 evaluation.
+g25 = reg(AchieveGoal("G-25: OnlyChefApprovedChangePickedAndSent <b>If</b> DishFlagged",
                       performs=by(TABLET), leaf=True),
-          "E G-93, G-55, G-54; Y G-55", "S: Kayla L38 | Y: K[01:07:53]", "SHOULD", tacit=True)
+          "E G-93, G-55, G-54; Y G-55", "S: Kayla L38 | Y: K[01:07:53]", "MUST", tacit=True)
 g64 = reg(AchieveGoal("G-64: RecordRevisedByAuthorizedChef <b>If</b> SupplierRecipeOrEquipmentChanges",
                       performs=by(HEAD), leaf=True),
           "E G-7, G-10..G-13, G-82; S G-55, G-56; Y G-31, G-47", "S: Antoine L53, L62 | Y: A[02:08:48], A[02:10:52]", "OUT")
@@ -136,12 +137,14 @@ g20 = reg(AchieveGoal("G-20: DishSafetyDetermined <b>Before</b> PromisingGuest <
 # =============================================================================
 # 3. GETTING THE KITCHEN TO NOTICE THE ALLERGY ORDER  (Antoine, Kayla)
 # =============================================================================
-g30 = reg(AchieveGoal("G-30: AllergenSeverityAndSeatNamedPlainlyOnTicketItem", performs=by(KDS), leaf=True),
-          "E G-23; S G-36; Y G-6, G-4", "S: Antoine L66 | Y: A[02:07:16], A[02:08:15]", "MUST")
+# V2: the ticket also shows whether traces matter (REQ-06). Found in the V1 evaluation.
+g30 = reg(AchieveGoal("G-30: AllergenSeverityTracesAndSeatNamedPlainlyOnTicketItem", performs=by(KDS), leaf=True),
+          "E G-23; S G-36; Y G-6, G-4", "S: Antoine L66, Sofia L21 | Y: A[02:07:16], A[02:08:15]", "MUST")
 g31 = reg(AchieveGoal("G-31: CrossContactWarningShownOnTicket <b>If</b> DishUsesSharedFryerBaseOrUtensil",
                       performs=by(KDS), leaf=True),
           "E G-30; S G-39, G-40; Y G-6", "S: Antoine L30, L76 | Y: A[02:10:16]", "MUST")
-g32 = reg(MaintainGoal("G-32: AllergyTicketVisuallyProminent <b>Unless</b> Acknowledged", performs=by(KDS), leaf=True),
+# V2: the ticket stays above normal tickets until all allergy items are done (REQ-08). Found in the V1 evaluation.
+g32 = reg(MaintainGoal("G-32: AllergyTicketProminent <b>Unless</b> AllAllergyItemsSignedOffOrRejected", performs=by(KDS), leaf=True),
           "E G-22, G-24; S G-38; Y G-10", "S: Antoine L73 | Y: A[02:08:15], A[02:18:40]", "MUST")
 g33 = reg(AchieveGoal("G-33: OneSoundPerAllergyTicketAndEscalation <b>Only If</b> UnacknowledgedPastThreshold",
                       performs=by(KDS), leaf=True),
@@ -169,8 +172,11 @@ g39 = reg(AchieveGoal("G-39: DishRejectedWithReason <b>If</b> SafetyCannotBeConf
           "S G-82; Y G-43; E G-87", "S: Sofia L74, L78 | Y: A[02:16:55]", "MUST")
 dp_rev = DomainProperty("Each reviewed dish is VerifiedSafe <b>Or</b> CannotBeConfirmed", leaf=True)
 hyp_a3 = DomainProperty("A-3: The reviewer name is the role picked from a menu. There is no real login", leaf=True)
+# V2: found in the V1 evaluation. In V1 the kitchen could confirm a dish that lists the seat's allergen.
+g89 = reg(AvoidGoal("G-89: DishConfirmed <b>If</b> DishListsSeatAllergen", performs=by(KDS), leaf=True),
+          "V2 (from the V1 evaluation)", "", "MUST", tacit=True)
 g37 = reg(AchieveGoal("G-37: DishConfirmedOrRejectedByKitchen <b>If</b> AllergyTicketAcknowledged",
-                      refinements=[Refinement(True, [g38, g39, dp_rev, hyp_a3], "P3")]),
+                      refinements=[Refinement(True, [g38, g39, dp_rev, hyp_a3, g89], "P3 H8")]),
           "S G-67; E G-83, G-73; Y G-42, G-82", "S: Sofia L82", "PARENT")
 g41 = reg(MaintainGoal("G-41: KitchenStatusShownPerItemOnTablet", performs=by(TABLET), leaf=True),
           "E G-85; S G-83 (shown to server); Y G-84", "S: Kayla L121 | Y: S[19:05:13]", "MUST")
@@ -345,6 +351,7 @@ o3 = Obstacle("O-3: NoNutsInRecipeTreatedAsSafeDespiteSharedEquipment") # E O-3
 o4 = Obstacle("O-4: ServerAssumesDishSafeWithoutKitchenCheck")         # Y O-8
 o5 = Obstacle("O-5: AllergenRecordOutOfSyncWithPlate")                 # Y O-3
 o6 = Obstacle("O-6: AllergyChangeLostDuringConnectionLoss")            # Y O-4
+o7 = Obstacle("O-7: DishWithSeatAllergenConfirmedByMistake")          # V2, from the V1 evaluation
 
 # =============================================================================
 # CONFLICTS  (see docs/goal-model.md for the decision on each)
@@ -361,6 +368,7 @@ CONFLICTS = {
     "C-9": ConflictLink(g16, g8),    # Sofia enters allergy herself vs server enters it
     "C-10": ConflictLink(g28, g85),  # Antoine ask me in person in a rush vs Kayla fewer trips to the kitchen
     "C-11": ConflictLink(g19, g77),    # Kayla keep notes across devices vs Sofia no stored data without consent
+    "C-12": ConflictLink(g89, g25),    # V2: never confirm a dish with the allergen vs a chef-approved change could make it safe
 }
 
 LINKS = [
@@ -370,18 +378,19 @@ LINKS = [
     ObstructionLink(g20, o4), ResolutionLink(g23, o4),
     ObstructionLink(g62, o5), ResolutionLink(g65, o5),
     ObstructionLink(g2, o6), ResolutionLink(g59, o6),
+    ObstructionLink(g37, o7), ResolutionLink(g89, o7),
 ] + list(CONFLICTS.values())
 
 # =============================================================================
 # SPEC TRACE  (specs/001-allergy-order-round-trip/spec.md)
-# REQ-01..REQ-17 are MUST, REQ-18..REQ-22 are SHOULD.
+# REQ-01..REQ-17 and REQ-20 are MUST, the other REQ-18..REQ-22 are SHOULD.
 # REQ-10 also traces to G-70: found while reviewing the spec on 11/16, because the tablet said
 # "Cannot confirm" for a dish with missing information while the kitchen could still "Confirm" it.
 # =============================================================================
 REQS = {
     "REQ-01": ["G-9"],  "REQ-02": ["G-10"], "REQ-03": ["G-12"], "REQ-04": ["G-22"],
     "REQ-05": ["G-23"], "REQ-06": ["G-30"], "REQ-07": ["G-31"], "REQ-08": ["G-32"],
-    "REQ-09": ["G-34"], "REQ-10": ["G-38", "G-70"], "REQ-11": ["G-39"], "REQ-12": ["G-41"],
+    "REQ-09": ["G-34"], "REQ-10": ["G-38", "G-70", "G-89"], "REQ-11": ["G-39"], "REQ-12": ["G-41"],
     "REQ-13": ["G-43"], "REQ-14": ["G-50"], "REQ-15": ["G-51"], "REQ-16": ["G-70"],
     "REQ-17": ["G-84"], "REQ-18": ["G-13"], "REQ-19": ["G-17"], "REQ-20": ["G-25"],
     "REQ-21": ["G-33"], "REQ-22": ["G-53"],
