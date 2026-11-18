@@ -54,7 +54,7 @@ It helped us understand that we can't fully satisfy all three stakeholders' need
 
 **3. How did spec-driven development help maintain consistency between the requirements and implementation?**
 
-In the spec, we wrote the requirements in detail, including test cases and different scenarios. And we use this spec to develop the code, so when we implement, we can use the exact scenario to check, since it's documented. And we can do this by elevating a structure, versioned specification into the single source of truth that directly drives code generation and automated verification
+In the spec, we wrote the requirements in detail, including test cases and different scenarios. And we use this spec to develop the code, so when we implement, we can use the exact scenario to check, since it's documented. And we can do this by versioned each interation of the spec, make sure that the specifications are well documanted. And spec is also acting as a source of truth for validating the implementation, whcih we can check if spec and code are align.
 
 **4. What evidence from your work would you present to management to demonstrate the value you contributed beyond AI-generated specifications and code?**
 
