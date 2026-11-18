@@ -98,4 +98,37 @@ describe('SC-002: no "safe" or "allergen-free" on any screen', () => {
     renderApp({ path: '/kitchen', role: 'station lead', state })
     assertNoSafeWording('kitchen preference sent')
   })
+
+  it('REQ-05 REQ-20: a picked chef-approved change — draft and sent, tablet, station lead and expediter', async () => {
+    // Draft with the change picked on the tablet.
+    let draft = withAllergy(seed(), 'T12', 3, { severity: 'severe', allergens: ['tree-nuts'] })
+    draft = withDraftItem(draft, 'T12', 3, 'walnut-salad')
+    const tablet = renderApp({ path: '/server', role: 'server', state: draft })
+    await tablet.user.click(tablet.screen.getByRole('button', { name: 'Table 12' }))
+    await tablet.user.click(tablet.screen.getByRole('button', { name: 'Seat 3' }))
+    await tablet.user.click(tablet.screen.getByRole('button', { name: 'Without walnuts' }))
+    expect(tablet.container.textContent).toContain('Chef-approved change: Without walnuts')
+    assertNoSafeWording('tablet draft with picked change')
+    cleanup()
+
+    for (const ks of KITCHEN_STATES) {
+      const s = withAllergy(seed(), 'T12', 3, { severity: 'severe', allergens: ['tree-nuts'] })
+      const state = withSentAllergyTicket(s, {
+        tableId: 'T12',
+        items: [{ seat: 3, dishId: 'walnut-salad', pickedChange: 'Without walnuts', ...ks.item }],
+      }).state
+      const t = renderApp({ path: '/server', role: 'server', state })
+      await t.user.click(t.screen.getByRole('button', { name: 'Table 12' }))
+      await t.user.click(t.screen.getByRole('button', { name: 'Seat 3' }))
+      assertNoSafeWording(`tablet sent with picked change, ${ks.name}`)
+      cleanup()
+      for (const role of ['station lead', 'expediter'] as const) {
+        const k = renderApp({ path: '/kitchen', role, state })
+        expect(k.container.textContent).toContain('Chef-approved change: Without walnuts')
+        assertNoSafeWording(`${role} with picked change, ${ks.name}`)
+        cleanup()
+      }
+    }
+  })
 })
+

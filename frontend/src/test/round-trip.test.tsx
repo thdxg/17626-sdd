@@ -91,4 +91,81 @@ describe('SC-006 full round trip', () => {
     expect(text(orderItem(tablet.container, 'green-salad', 2))).not.toContain('Tree nuts')
     noSafe()
   })
+
+  it('REQ-05 REQ-06 REQ-08 REQ-10 REQ-20: pick "Without walnuts" → send → kitchen sees traces and the change, no "Confirm"; ticket stays up until "Cannot confirm" (SC-008)', async () => {
+    const shared = createShared()
+    const tablet = renderApp({ path: '/server', role: 'server', shared })
+    const kitchen = renderApp({ path: '/kitchen', role: 'station lead', shared })
+    const T = tablet.screen
+    const K = kitchen.screen
+    const saladT = () => orderItem(tablet.container, 'walnut-salad', 3)
+    // SC-008: the tablet never shows "Confirmed" or "OK to serve" for the walnut salad.
+    const neverConfirmed = () => {
+      expect(labelsIn(saladT())).not.toContain(LABEL.confirmed)
+      expect(labelsIn(saladT())).not.toContain(LABEL.okToServe)
+      expect(text(saladT())).not.toMatch(/Confirmed|OK to serve/)
+      expect(document.body.textContent).not.toMatch(FORBIDDEN)
+    }
+
+    await tablet.user.click(T.getByRole('button', { name: 'Table 12' }))
+    await tablet.user.click(T.getByRole('button', { name: 'Seat 3' }))
+    for (const name of ['Tree nuts', 'severe allergy', 'Traces: yes', 'Save allergy']) {
+      await tablet.user.click(T.getByRole('button', { name }))
+    }
+    await tablet.user.click(T.getByRole('button', { name: 'Add Pear & walnut salad' }))
+    await tablet.user.click(T.getByRole('button', { name: 'Add Steak frites' }))
+    neverConfirmed()
+
+    // US2 scenario 9: pick the chef-approved change, then send.
+    await tablet.user.click(within(saladT()).getByRole('button', { name: 'Without walnuts' }))
+    expect(text(saladT())).toContain('Chef-approved change: Without walnuts')
+    expect(labelsIn(saladT())).toContain('Contains Tree nuts')
+    neverConfirmed()
+    await tablet.user.click(T.getByRole('button', { name: 'Send order' }))
+    expect(text(saladT())).toContain('Chef-approved change: Without walnuts')
+    expect(within(saladT()).queryByRole('button', { name: 'Without walnuts' })).toBeNull()
+    neverConfirmed()
+
+    // US3 scenario 8: the kitchen item shows traces and the change.
+    const card = () => ticketCards(kitchen.container).find((c) => text(c).includes('Table 12'))!
+    const saladK = () => kitchenItem(card(), 'walnut-salad', 3)
+    for (const t of ['Tree nuts', 'severe allergy', 'Traces: yes', 'seat 3', 'Chef-approved change: Without walnuts']) {
+      expect(text(saladK())).toContain(t)
+    }
+    expect(ticketCards(kitchen.container)[0]).toBe(card())
+    await kitchen.user.click(K.getByRole('button', { name: 'Acknowledge' }))
+    neverConfirmed()
+
+    // US3 scenario 9: still above the seeded normal tickets after "Acknowledge".
+    const order = () => ticketCards(kitchen.container).map((c) => c.dataset.ticket)
+    expect(ticketCards(kitchen.container)[0]).toBe(card())
+    expect(order().slice(1)).toEqual(['seed-ticket-1', 'seed-ticket-2'])
+
+    // US4 scenario 8 / C-12: no "Confirm" on the salad even with the change; steak frites has one.
+    expect(within(saladK()).queryByRole('button', { name: 'Confirm' })).toBeNull()
+    expect(within(kitchenItem(card(), 'steak-frites', 3)).getByRole('button', { name: 'Confirm' })).toBeTruthy()
+
+    // The expediter has nothing to sign off on the salad.
+    await kitchen.user.click(K.getByRole('button', { name: 'Expediter' }))
+    expect(within(saladK()).queryByRole('button', { name: 'Sign off' })).toBeNull()
+    await kitchen.user.click(K.getByRole('button', { name: 'Station lead' }))
+
+    // Confirm and sign off the steak; the salad is still open, so the ticket stays on top.
+    await kitchen.user.click(within(kitchenItem(card(), 'steak-frites', 3)).getByRole('button', { name: 'Confirm' }))
+    await kitchen.user.click(K.getByRole('button', { name: 'Expediter' }))
+    await kitchen.user.click(within(kitchenItem(card(), 'steak-frites', 3)).getByRole('button', { name: 'Sign off' }))
+    expect(labelsIn(orderItem(tablet.container, 'steak-frites', 3))).toContain(LABEL.okToServe)
+    expect(ticketCards(kitchen.container)[0]).toBe(card())
+    neverConfirmed()
+
+    // The salad can only end as "Cannot confirm"; then the ticket drops back into sent order.
+    await kitchen.user.click(K.getByRole('button', { name: 'Station lead' }))
+    await kitchen.user.click(within(saladK()).getByRole('button', { name: 'Cannot confirm' }))
+    await kitchen.user.type(within(saladK()).getByLabelText('Reason'), 'Dish lists tree nuts')
+    await kitchen.user.click(within(saladK()).getByRole('button', { name: 'Save' }))
+    expect(labelsIn(saladT())).toContain(LABEL.cannotConfirm)
+    expect(order()[order().length - 1]).toBe(card().dataset.ticket)
+    neverConfirmed()
+  })
 })
+
