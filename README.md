@@ -9,7 +9,7 @@ We built it with [GitHub Spec Kit](https://github.github.io/spec-kit/): goal mod
 | # | Deliverable | Link |
 |---|---|---|
 | 1 | GitHub Version 1 (goal model, spec, Spec Kit artifacts, source) | [`v1`](https://github.com/thdxg/17626-sdd/tree/v1) |
-| 2 | GitHub Version 2 (revised goal model, spec, Spec Kit artifacts, source) | [`v2`](https://github.com/thdxg/17626-sdd/tree/v2) _(TODO: tag after V2 is merged)_ |
+| 2 | GitHub Version 2 (revised goal model, spec, Spec Kit artifacts, source) | [`v2`](https://github.com/thdxg/17626-sdd/tree/v2) |
 | 3 | Prototype V1 URL | https://17626-sdd-v1.vercel.app/ |
 | 4 | Prototype V2 URL | https://17626-sdd-v2.vercel.app/ |
 | 5 | Requirements Analysis and Learning Log | [`docs/learning-log.md`](docs/learning-log.md) |
