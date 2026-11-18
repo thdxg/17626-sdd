@@ -23,7 +23,7 @@ The list is fixed in `data/allergens.ts`; the UI cannot add allergens.
 | `allergens` | `AllergenId[]` | Listed allergens (REQ-04) |
 | `allergenInfo` | `"complete" \| "missing" \| "unverified"` | Not `complete` → "Cannot confirm" on the tablet (REQ-16) and no "Confirm" in the kitchen (REQ-10) |
 | `sharedEquipment` | `("fryer" \| "base" \| "utensil")[]` | Each one → "Cross-contact: <equipment>" (REQ-07) |
-| `approvedChanges` | `Partial<Record<AllergenId, string[]>>` | Chef-approved changes per allergen (REQ-20, SHOULD) |
+| `approvedChanges` | `Partial<Record<AllergenId, string[]>>` | Chef-approved changes per allergen (REQ-20, MUST in V2). The record does not say whether a change removes the allergen (C-12) |
 
 Both screens import the same `dishes.ts` module, so they always read the same record (A-1). Dish
 records are never written (Out of Scope: editing dish records).
@@ -34,7 +34,7 @@ records are never written (Out of Scope: editing dish records).
 
 | Field | Type | Notes |
 |---|---|---|
-| `schemaVersion` | `1` | Mismatch → reseed (R-14) |
+| `schemaVersion` | `2` | `1` in V1. Mismatch → reseed (R-14) |
 | `revision` | `number` | +1 on every write; used in the broadcast notice |
 | `tables` | `Table[]` | Seeded; not editable |
 | `seats` | `Record<SeatKey, Seat>` | `SeatKey = "<tableId>:<seatNumber>"` |
@@ -84,6 +84,7 @@ Display names for severity: severe allergy, intolerance, preference, unknown (as
 | `review` | `{ role: "station lead"; at: string } \| null` | Set by Confirm (REQ-10) |
 | `cannotConfirm` | `{ role: "station lead"; reason: string; at: string } \| null` | Set by Cannot confirm (REQ-11); `reason` non-blank |
 | `signOff` | `{ role: "expediter"; at: string } \| null` | Set by Sign off (REQ-14); drives "OK to serve" (REQ-15) |
+| `pickedChange` | `string \| null` | V2. One chef-approved change picked on the draft (REQ-20). Must be in `approvedChangesFor(dish, seat allergies)`; at send, kept only if still offered, otherwise `null` (R-16). Fixed after send |
 
 A draft item's allergy display is always computed from the seat's **current** allergies, so
 REQ-02 holds for items added before or after the allergy was recorded.
@@ -126,6 +127,9 @@ Rules are applied in this order. The result is a list, because several can apply
    the kitchen), and kitchen status ≠ Confirmed: add `"Not confirmed"` (REQ-05, R-9). A seat with
    no allergy gets no "Not confirmed" (US2 scenario 8).
 
+A picked change (REQ-20) never changes these labels: the item still shows "Contains <allergen>"
+(C-12). The tablet shows the change as its own line, "Chef-approved change: <text>".
+
 ### Tablet kitchen status label (REQ-12, REQ-13, REQ-15)
 
 | `kitchenStatus` | `signOff` | Tablet shows |
@@ -143,8 +147,9 @@ snapshot, so a quick change of status still ends on the latest one (Edge Cases).
 ### Kitchen state machine (REQ-09, REQ-10, REQ-11, REQ-14)
 
 ```text
-            Acknowledge (station lead, whole ticket)       Confirm (station lead,
-  Sent ───────────────────────────────────────▶ Acknowledged ──── dish.allergenInfo = complete) ──▶ Confirmed ── Sign off (expediter) ──▶ Confirmed + signOff
+            Acknowledge (station lead, whole ticket)       Confirm (station lead; dish info complete
+                                                                and, V2, no snapshot allergen in the dish)
+  Sent ───────────────────────────────────────▶ Acknowledged ──────────────────────────────────▶ Confirmed ── Sign off (expediter) ──▶ Confirmed + signOff
                                                     │
                                                     └── Cannot confirm (station lead, reason ≠ blank) ──▶ Cannot confirm (end state)
 ```
@@ -152,7 +157,7 @@ snapshot, so a quick change of status still ends on the latest one (Edge Cases).
 | Action | Role | Allowed from | Guard | Effect |
 |---|---|---|---|---|
 | `acknowledge(ticketId)` | station lead | ticket not acknowledged | ticket is an allergy ticket | `ticket.acknowledgedAt = now`; every allergy item with status `Sent` → `Acknowledged`; normal items unchanged (REQ-09, A-7) |
-| `confirm(itemId)` | station lead | `Acknowledged` | `dish.allergenInfo = "complete"` | → `Confirmed`; `review = {role, at: now}` (REQ-10) |
+| `confirm(itemId)` | station lead | `Acknowledged` | `dish.allergenInfo = "complete"` **and** no allergen in `allergySnapshot` is in `dish.allergens` (V2, R-15) | → `Confirmed`; `review = {role, at: now}` (REQ-10) |
 | `cannotConfirm(itemId, reason)` | station lead | `Acknowledged` | `reason.trim() ≠ ""` | → `Cannot confirm`; save trimmed reason, role and time (REQ-11) |
 | `signOff(itemId)` | expediter | `Confirmed`, `signOff = null` | – | `signOff = {role, at: now}` (REQ-14) |
 
@@ -163,14 +168,25 @@ unchanged (REQ-11 scenario 5).
 
 ### Kitchen ordering (REQ-08)
 
-Sort tickets by `(isAllergyTicket && !acknowledged) ? 0 : 1`, then by `sentAt`. Allergy tickets
-that are not acknowledged stay at the top as newer tickets arrive. They show the label
-"ALLERGY – NOT ACKNOWLEDGED" (en dash, U+2013).
+V2 (R-18): rank each ticket, then sort by rank, then `sentAt`:
+
+| Rank | Ticket |
+|---|---|
+| 0 | Allergy ticket, not acknowledged. Label "ALLERGY – NOT ACKNOWLEDGED" (en dash, U+2013) |
+| 1 | Allergy ticket, acknowledged, with an open allergy item (`signOff = null` and status ≠ "Cannot confirm") |
+| 2 | Every other ticket (normal tickets; allergy tickets with no open item) |
+
+Allergy tickets that are not acknowledged stay at the top as newer tickets arrive, and acknowledged
+ones stay above all normal tickets until their allergy items are done. (V1 had ranks 0 and 1
+only.)
 
 ### Kitchen item text (REQ-06, REQ-07)
 
-Each allergy item shows as text: each allergen name from `allergySnapshot`, the severity display
-name, `"seat <n>"`, and one `"Cross-contact: <equipment>"` per `dish.sharedEquipment` entry.
+Each allergy item shows as text, in this order: each allergen name from `allergySnapshot`, the
+severity display name, `"Traces: yes"` if any snapshot allergy has `traces: true` else
+`"Traces: no"` (V2, R-17), `"seat <n>"`, one `"Cross-contact: <equipment>"` per
+`dish.sharedEquipment` entry, and `"Chef-approved change: <text>"` when `pickedChange ≠ null`
+(V2, REQ-20).
 
 ### Clearing items (REQ-22, SHOULD)
 

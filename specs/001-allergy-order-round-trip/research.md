@@ -186,9 +186,76 @@ noted in R-6 and R-7 when it installs them.
 
 ## R-14: Persisted document versioning and reset (A-10)
 
-- **Decision**: Key `allergy-round-trip/state`. The document has `schemaVersion: 1`. If the
+- **Decision**: Key `allergy-round-trip/state`. The document has `schemaVersion: 1` in V1 and
+  `schemaVersion: 2` in V2 (new `pickedChange` field, R-16). If the
   document is missing, cannot be parsed, or has another version, the store writes the seed.
   "Reset demo data" (role menu and both screen headers) writes the seed with a new `revision` and
   broadcasts, so all tabs reset together.
 - **Rationale**: Changes to the data shape during the sprint will not break a tab that holds an
   old document; it simply reseeds.
+
+---
+
+## V2 decisions (2026-11-17)
+
+These follow the V2 spec changes (spec.md §Clarifications, Session 2026-11-17). Where the spec
+leaves a detail open, the decision below picks the stricter or simpler reading.
+
+## R-15: No "Confirm" for a dish that lists the seat's allergen (REQ-10, C-12)
+
+- **Decision**: `offeredActions` leaves out `confirm` when any allergen in the item's
+  `allergySnapshot` is in `dish.allergens`. Every allergy in the snapshot counts, whatever its
+  severity. The `confirm` reducer already checks `offeredActions`, so the same rule guards it (R-4).
+  "Cannot confirm" is still offered, so the item can end as "Cannot confirm" with a reason.
+- **Rationale**: The snapshot is what the kitchen sees (R-10), so the rule uses the same data.
+  Counting a preference-severity allergen too is the stricter reading, and it can only matter on a
+  seat that is already an allergy order because of another allergy (Constitution I).
+- **Alternatives considered**: Using the seat's current allergies (can differ from what was sent);
+  allowing "Confirm" when a change was picked (rejected by the spec, C-12).
+
+## R-16: Picking a chef-approved change (REQ-20)
+
+- **Decision**: `OrderItem` gets `pickedChange: string | null`. The server picks on a **draft**
+  order item: under an item that shows "Contains <allergen>", each offered change
+  (`approvedChangesFor(dish, current seat allergies)`) is a toggle button named by the change text
+  (`aria-pressed`). Tapping it picks it; tapping the picked one again clears it; picking another
+  replaces it (one change per item). The menu rows keep listing the offered changes as text (V1).
+  The item then shows "Chef-approved change: <text>" on the tablet. At "Send order" the change is
+  kept only if it is still offered for the seat's allergies at that moment; otherwise it is set to
+  `null`. The kitchen display shows the same line on the allergy item. Picking a change does not
+  change any label: the item still shows "Contains <allergen>", and the kitchen still gets no
+  "Confirm" (R-15).
+- **Rationale**: The spec says the order item "can hold one chef-approved change picked by the
+  server" and that the kitchen sees it when the order is sent, so the pick belongs to the draft
+  item. Dropping a change that no longer applies keeps the kitchen from seeing a change for an
+  allergy that was removed (REQ-19). Showing the pick on the tablet too lets the server check what
+  was sent; it is not required by the spec but adds no new claim.
+- **Alternatives considered**: Picking on the menu row before "Add" (the pick would have to move
+  to the item anyway, and adds a step); a free-text change (REQ-20 allows only chef-approved ones).
+- **Tap count**: REQ-17 counts only recording an allergy, so the picker does not affect it.
+
+## R-17: Traces on the kitchen item (REQ-06)
+
+- **Decision**: `kitchenItemText` adds one line after the severity: "Traces: yes" if any allergy
+  in the snapshot has `traces: true`, otherwise "Traces: no".
+- **Rationale**: The tablet already uses the "Traces: yes" / "Traces: no" wording (contracts/ui.md),
+  and US3 scenario 8 expects "Traces: yes" as text. With several allergies on one seat, "yes" wins
+  because the kitchen should take the stricter care (Constitution I).
+- **Alternatives considered**: One traces line per allergy (longer, and the allergens are already
+  merged into one list on the item).
+
+## R-18: Ticket order after "Acknowledge" (REQ-08, C-3)
+
+- **Decision**: `sortTickets` ranks each ticket, then sorts by rank, then `sentAt`, then the
+  original index (stable):
+  - **0**: an allergy ticket that is not acknowledged (label "ALLERGY – NOT ACKNOWLEDGED", as V1);
+  - **1**: an acknowledged allergy ticket with an **open** allergy item, meaning an allergy item
+    with `signOff = null` whose status is not "Cannot confirm";
+  - **2**: every other ticket (normal tickets, and allergy tickets with no open item).
+  Rank 1 gets no new label; the spec does not name one, and the status of each item is already
+  shown as text.
+- **Rationale**: This is the second sentence of REQ-08 and US3 scenario 9. "Above all normal
+  tickets" is met because normal tickets are always rank 2. Keeping unacknowledged tickets above
+  acknowledged ones keeps the V1 rule ("at the top") true.
+- **Alternatives considered**: Keeping every allergy ticket above normal tickets forever (a done
+  ticket would block the view, and REQ-22 never lets it be cleared).

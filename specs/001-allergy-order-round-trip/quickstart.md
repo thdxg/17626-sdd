@@ -38,20 +38,26 @@ Expected: every test passes. Test names start with the REQ IDs they cover, so
 | US2 | 4 | REQ-05 | `no-safe-wording.test.tsx` (SC-002 sweep) | RTL |
 | US2 | 5 | REQ-16 | `labels.test.ts` | unit |
 | US2 | 8 | REQ-05 | `labels.test.ts` | unit |
-| US2 | 6, 7 | REQ-19, REQ-20 (SHOULD) | `us2.should.test.tsx` | RTL |
+| US2 | 6 | REQ-19 (SHOULD) | `us2.should.test.tsx` | RTL |
+| US2 | 7, 9 (tablet part) | REQ-20 (MUST in V2) | `us2.change.test.tsx`, `actions.test.ts` (`pickChange`, `sendOrder`) | RTL + unit |
+| US2 | 9 (kitchen part) | REQ-20, REQ-10 | `round-trip.test.tsx` | RTL |
 | US3 | 1 | REQ-06 | `kitchen.test.ts`, `us3.kitchen.test.tsx` | unit + RTL |
 | US3 | 2 | REQ-07 | `kitchen.test.ts` | unit |
 | US3 | 3 | REQ-08 | `kitchen.test.ts` (`sortTickets`), `us3.kitchen.test.tsx` | unit + RTL |
 | US3 | 4 | REQ-09 | `actions.test.ts`, `us3.kitchen.test.tsx` | unit + RTL |
+| US3 | 8 | REQ-06 (V2) | `kitchen.test.ts` (`kitchenItemText`), `us3.kitchen.test.tsx` | unit + RTL |
+| US3 | 9 | REQ-08 (V2) | `kitchen.test.ts` (`sortTickets`), `us3.kitchen.test.tsx` | unit + RTL |
 | US3 | 5, 6 + boundary 59/60/61 s | REQ-21 (SHOULD) | `us3.should.test.tsx` (fake timers) | RTL |
 | US3 | 7 | REQ-22 (SHOULD) | `us3.should.test.tsx` | RTL |
 | US4 | 1, 2, 3 | REQ-10 | `kitchen.test.ts` (`offeredActions`), `actions.test.ts` | unit |
 | US4 | 4, 5 | REQ-11 | `actions.test.ts`, `us4.review.test.tsx` | unit + RTL |
 | US4 | 6, 7 | REQ-14 | `kitchen.test.ts`, `actions.test.ts` | unit |
+| US4 | 8 | REQ-10 (V2) | `kitchen.test.ts` (`offeredActions`), `actions.test.ts` (`confirm` guard) | unit |
 | US5 | 1, 2 + boundary 4/5/6 s | REQ-12 | `store.sync.test.ts` (two stores, fake channel); timing manual §3 | unit + manual |
 | US5 | 3 | REQ-13 | `labels.test.ts` (every status) | unit |
 | US5 | 4, 5 | REQ-15 | `labels.test.ts` | unit |
 | — | SC-006 full round trip | all MUST | `round-trip.test.tsx` (two rendered apps sharing fake storage + channel) | RTL |
+| — | SC-008 | REQ-10 (V2) | `round-trip.test.tsx` (walnut salad for a tree-nut seat never shows "Confirmed" or "OK to serve") | RTL |
 
 SC-007 gate: all non-SHOULD tests pass before the SHOULD test files are enabled.
 
@@ -69,19 +75,27 @@ npm run dev         # open the printed URL
 3. Tab A menu for seat 3: "Pear & walnut salad" shows "Contains Tree nuts"; "Steak frites" shows
    "Not confirmed"; "Daily special" shows "Cannot confirm" (REQ-04, REQ-05, REQ-16). Add the
    salad, steak frites and the daily special to seat 3, and add "Green salad" to seat 2.
-   "Send order".
+   **V2**: under the salad in the order, tap "Without walnuts". The item shows "Chef-approved
+   change: Without walnuts" and still "Contains Tree nuts" (REQ-20). "Send order".
 4. Tab B: the Table 12 ticket is at the top with "ALLERGY – NOT ACKNOWLEDGED", above the seeded
-   normal tickets. Items show "Tree nuts", "severe allergy" and "seat 3"; steak frites shows
-   "Cross-contact: fryer" (REQ-06, REQ-07, REQ-08). Tap "Acknowledge" (REQ-09).
+   normal tickets. Items show "Tree nuts", "severe allergy", "Traces: yes" (V2) and "seat 3";
+   steak frites shows "Cross-contact: fryer"; the salad shows "Chef-approved change: Without
+   walnuts" (V2) (REQ-06, REQ-07, REQ-08, REQ-20). Tap "Acknowledge" (REQ-09). **V2**: the ticket
+   loses the label but stays above the normal tickets (REQ-08).
 5. **Timing check (REQ-12, SC-004)**: watch tab A while tapping in tab B. Every change below
    must appear in tab A within 5 s (expected: almost at once).
 6. Tab B: steak frites → "Confirm" (REQ-10). Daily special: no "Confirm" button; "Cannot
    confirm" → reason "Supplier sheet missing" → "Save" (REQ-10, REQ-11). Try "Save" with an
-   empty reason first: nothing changes (REQ-11).
+   empty reason first: nothing changes (REQ-11). **V2**: the salad offers no "Confirm", only
+   "Cannot confirm", even with the picked change (REQ-10, C-12); mark it "Cannot confirm" with a
+   reason.
 7. Tab A: steak frites shows "Confirmed" but not "OK to serve"; the daily special shows "Cannot
    confirm" and "Reason: Supplier sheet missing" (REQ-12, REQ-13, REQ-15).
 8. Tab B: switch the role to "Expediter". Only the confirmed item offers "Sign off" (REQ-14).
    Tap it. Tab A: steak frites now shows "OK to serve" (REQ-15). This completes SC-006.
+   **V2**: once every allergy item is signed off or "Cannot confirm", the Table 12 ticket drops
+   back among the normal tickets in sent order (REQ-08). The salad never showed "Confirmed" or
+   "OK to serve" (SC-008).
 9. At every step, check that no screen shows "safe" or "allergen-free" (SC-002).
 10. "Reset demo data" in either tab: both tabs go back to the seed.
 
