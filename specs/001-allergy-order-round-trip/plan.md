@@ -1,6 +1,6 @@
 # Implementation Plan: Allergy Order Round Trip
 
-**Branch**: `plan-and-tasks` (feature dir `001-allergy-order-round-trip`) | **Date**: 2026-11-16 | **Spec**: [spec.md](./spec.md)
+**Branch**: `plan-and-tasks` (V1), `v2-plan` (V2) (feature dir `001-allergy-order-round-trip`) | **Date**: 2026-11-16, V2 update 2026-11-17 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/001-allergy-order-round-trip/spec.md`
 
@@ -19,6 +19,24 @@ REQ-16), allergy-order rule (REQ-03, REQ-18), kitchen state transitions with gua
 REQ-10, REQ-11, REQ-14), and tablet status labels (REQ-12, REQ-13, REQ-15). The React views only
 render what these functions return, so the forbidden words "safe" and "allergen-free" cannot
 come from view code (Constitution I, REQ-05).
+
+## V2 update (2026-11-17)
+
+The spec was revised after the V1 evaluation (spec.md §Clarifications, Session 2026-11-17). The
+stack, structure and store do not change. Four requirements change, and each maps to one small
+design change:
+
+| REQ | Spec change | Design change | Research |
+|---|---|---|---|
+| REQ-06 | The kitchen item also shows whether traces matter | `kitchenItemText` adds a "Traces: yes" or "Traces: no" line | R-17 |
+| REQ-10 | No "Confirm" when the dish lists one of the seat's allergens | `offeredActions` (and so the `confirm` reducer guard) also checks the allergy snapshot against `dish.allergens` | R-15 |
+| REQ-20 | Now MUST: the server picks one chef-approved change, and the kitchen sees it | New `pickedChange` field on `OrderItem`, a `pickChange` action, toggle buttons on draft order items, and a "Chef-approved change: <text>" line on both screens. "Confirm" is still not offered (C-12). | R-16 |
+| REQ-08 | An acknowledged allergy ticket stays above normal tickets until every allergy item is signed off or marked "Cannot confirm" | `sortTickets` uses three ranks instead of two | R-18 |
+
+`pickedChange` changes the stored document, so `schemaVersion` goes from 1 to 2 and a tab that
+holds a V1 document reseeds (R-14). The V2 tasks are Phase 11 of tasks.md. All V1 tests stay,
+except V1 tests that expected the old REQ-08 order or REQ-20 as text only; those are updated to
+the V2 wording.
 
 ## Technical Context
 
@@ -53,6 +71,13 @@ come from view code (Constitution I, REQ-05).
 | V. Testable | Acceptance examples per REQ; done = examples pass | PASS: every acceptance scenario maps to a Vitest test (quickstart.md §Scenario map) | PASS: boundary examples (4/5 taps, 4/5/6 s, 59/60/61 s) use an injected clock and counted clicks |
 
 No violations. Complexity Tracking is empty.
+
+**V2 re-check (2026-11-17)**: PASS. REQ-10 makes "Confirm" stricter and a picked change never
+lifts it (I, C-12). The new text ("Traces: yes/no", "Chef-approved change: <text>") is added to
+the closed set in contracts/ui.md and covered by the SC-002 sweep (I). Every Phase 11 task names
+REQ-06, REQ-08, REQ-10 or REQ-20 (II). The plan changed only after the spec (III). No new
+dependency or service (IV). Every new acceptance scenario (US2 9, US3 8–9, US4 8, SC-008) maps to
+a test (V, quickstart.md §2).
 
 ## Project Structure
 
@@ -121,6 +146,8 @@ without rendering, and views stay thin. Tests live next to the code under `src/t
 4. **Cross-cutting MUST checks**: SC-002 forbidden-word sweep, SC-006 full round-trip test.
 5. **Gate**: all MUST acceptance tests green (SC-007).
 6. **SHOULD** (only after 5): REQ-18, REQ-19, REQ-20, REQ-21, REQ-22.
+7. **V2** (after the V1 tag): schema bump → tests for REQ-06, REQ-08, REQ-10, REQ-20 → domain
+   changes → tablet change picker → V2 gate → manual walkthrough and deploy.
 
 ## Complexity Tracking
 

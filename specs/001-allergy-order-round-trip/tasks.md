@@ -11,7 +11,7 @@ description: "Task list for Allergy Order Round Trip"
 
 **Tests**: Included. Constitution V says work is done only when the acceptance examples of its REQ IDs pass, and quickstart.md §2 maps every acceptance scenario to a Vitest file. Within each story, write the tests first and confirm they fail.
 
-**Organization**: Tasks are grouped by user story. All five stories are P1 (spec.md). SHOULD requirements (REQ-18…REQ-22) are in a separate phase that starts only after the MUST gate (Constitution IV, SC-007). Those tasks keep their story label.
+**Organization**: Tasks are grouped by user story. All five stories are P1 (spec.md). SHOULD requirements (REQ-18…REQ-22) are in a separate phase that starts only after the MUST gate (Constitution IV, SC-007). Those tasks keep their story label. Phase 11 holds the V2 tasks from the revised spec (2026-11-17: REQ-06, REQ-08, REQ-10, REQ-20); they also keep their story labels.
 
 ## Conventions (apply to every task)
 
@@ -247,6 +247,37 @@ description: "Task list for Allergy Order Round Trip"
 
 ---
 
+## Phase 11: V2 — Changes from the V1 Evaluation (spec 2026-11-17)
+
+**Purpose**: Build the four V2 requirement changes (spec.md §Clarifications, Session 2026-11-17; plan.md §V2 update). REQ-20 is now MUST. Write the tests first and confirm they fail. Every V1 test must still pass, except the ones named below that assert the old REQ-08 order or REQ-20 as text only; update those to the V2 wording and say so in the commit.
+
+### Setup for V2
+
+- [ ] T074 Add `pickedChange: string | null` to `OrderItem` in `frontend/src/domain/types.ts`, set it to `null` in `addItem` (`frontend/src/domain/actions.ts`) and in any seeded or fixture item (`frontend/src/data/seed.ts`, `frontend/src/test/fixtures.ts`), and bump `schemaVersion` from 1 to 2 in the types, the seed and the store's reseed check (`frontend/src/store/store.ts`). Add a store test: a stored document with `schemaVersion: 1` is replaced by the seed (research R-14). — REQ: REQ-20 (A-10)
+
+### Tests for V2 (write first, confirm they fail)
+
+- [ ] T075 [P] [US3] In `frontend/src/test/kitchen.test.ts` add: `REQ-06` — `kitchenItemText` has "Traces: yes" when the snapshot allergy has `traces: true`, "Traces: no" when it is `false`, and "Traces: yes" when two allergies disagree (US3 scenario 8, R-17), placed after the severity; `REQ-08` — `sortTickets`: an acknowledged allergy ticket with an open item stays above older and newer normal tickets; it drops to sent order once every allergy item is signed off or "Cannot confirm"; an unacknowledged allergy ticket stays above an acknowledged one (US3 scenario 9, R-18). Update the V1 `sortTickets` case that expected an acknowledged ticket to fall back to sent order at once. — REQ: REQ-06, REQ-08
+- [ ] T076 [P] [US4] In `frontend/src/test/kitchen.test.ts` and `frontend/src/test/actions.test.ts` add `REQ-10` cases (US4 scenario 8, R-15): an acknowledged walnut salad for a tree-nut seat offers "cannotConfirm" but not "confirm"; the `confirm` reducer on it returns the same reference; a picked change does not bring "confirm" back; a snapshot allergen with `preference` severity on an allergy-order seat also blocks it; steak frites for the same seat still offers "confirm". — REQ: REQ-10
+- [ ] T077 [P] [US2] In `frontend/src/test/actions.test.ts` add `REQ-20` cases for `pickChange` and `sendOrder` (R-16): picking "Without walnuts" on a draft walnut salad for a tree-nut seat sets it; `null` clears it; a change not offered (wrong text, almond tart, or a seat without tree nuts) and any sent item return the same reference; at send a still-offered change is kept and a change no longer offered (allergy removed or changed before send) becomes `null`. Create `frontend/src/test/us2.change.test.tsx` (RTL, US2 scenarios 7 and 9, tablet part): the draft salad shows a "Without walnuts" toggle; tapping it sets `aria-pressed="true"` and shows "Chef-approved change: Without walnuts"; tapping again clears it; the item still shows "Contains Tree nuts"; almond tart shows no toggle; a sent item shows the line but no toggle. Move the REQ-20 case from `frontend/src/test/us2.should.test.tsx` here and update it to the V2 behaviour. — REQ: REQ-20
+- [ ] T078 [US2] [US3] [US4] In `frontend/src/test/round-trip.test.tsx` and `frontend/src/test/us3.kitchen.test.tsx` add RTL cases: after the tablet picks "Without walnuts" and sends, the kitchen item shows "Traces: yes" and "Chef-approved change: Without walnuts", and no "Confirm" button for the station lead (US2 scenario 9, US3 scenario 8, US4 scenario 8); after "Acknowledge" the allergy ticket is still above the seeded normal tickets (US3 scenario 9); the tablet never shows "Confirmed" or "OK to serve" for the walnut salad at any step (SC-008). Extend the SC-002 sweep in `frontend/src/test/no-safe-wording.test.tsx` with a picked-change state on both screens. — REQ: REQ-05, REQ-06, REQ-08, REQ-10, REQ-20 (SC-002, SC-008)
+
+### Implementation for V2
+
+- [ ] T079 [US3] In `frontend/src/domain/labels.ts` add `tracesLabel` and `changeLabel` (contracts/domain-api.md) and extend `kitchenItemText` per data-model.md §Kitchen item text: the traces line after the severity, and the change line last when `pickedChange` is set. Use `tracesLabel` in `frontend/src/views/server/AllergyPanel.tsx` too, so both screens share the wording. Run T075 until the REQ-06 cases pass. — REQ: REQ-06, REQ-20
+- [ ] T080 [US3] In `frontend/src/domain/kitchen.ts` change `sortTickets` to the three ranks in data-model.md §Kitchen ordering (R-18). `TicketCard.tsx` keeps showing "ALLERGY – NOT ACKNOWLEDGED" only for rank 0. Run T075 until the REQ-08 cases pass. — REQ: REQ-08
+- [ ] T081 [US4] In `frontend/src/domain/kitchen.ts` add `listsSnapshotAllergen(item, dish)` and leave "confirm" out of `offeredActions` when it is true. Check that the `confirm` reducer in `frontend/src/domain/actions.ts` uses `offeredActions` (or the same check), so a stale "Confirm" tap does nothing (R-4). Run T076 until it passes. — REQ: REQ-10
+- [ ] T082 [US2] In `frontend/src/domain/actions.ts` add the `pickChange` reducer and make `sendOrder` drop a picked change that is no longer offered (contracts/domain-api.md). In `frontend/src/views/server/OrderPanel.tsx` render, under a draft item that shows "Contains", one `aria-pressed` toggle per change from `approvedChangesFor(dish, seat allergies)` that dispatches `pickChange`, and show `changeLabel(item.pickedChange)` on draft and sent items; sent items get no toggles. Keep `DishList.tsx` showing the offered changes as text (V1). Run T077 until it passes. — REQ: REQ-20
+- [ ] T083 [US3] In `frontend/src/views/kitchen/AllergyItemRow.tsx` check that the new `kitchenItemText` lines render (no code change expected) and that "Confirm" follows `offeredActions`. Run T078 until it passes. — REQ: REQ-06, REQ-10, REQ-20
+- [ ] T084 **V2 gate**: run `npm test`, `npm run lint` and `npm run build` in `frontend/`. Every test passes, including all V1 tests not named in T075 or T077 as updated. — REQ: REQ-06, REQ-08, REQ-10, REQ-20 (SC-002, SC-007, SC-008)
+
+### Check and deploy V2
+
+- [ ] T085 Run the manual two-tab walkthrough in quickstart.md §3, including the **V2** steps, on `npm run dev`, then again on the V2 URL after the merge to `main` deploys it. Record any difference as a defect against its REQ ID. — REQ: REQ-06, REQ-08, REQ-10, REQ-12, REQ-20
+- [ ] T086 [P] Fill in "What changed from V1 to V2" in the root `README.md`: the four changes with their REQ IDs, C-12, and links to the spec's 2026-11-17 clarifications and to `docs/learning-log.md` Section 3. — REQ: REQ-06, REQ-08, REQ-10, REQ-20 (Constitution II)
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -257,6 +288,7 @@ description: "Task list for Allergy Order Round Trip"
 - **Phase 8 (MUST checks + gate)**: after all five stories.
 - **Phase 9 (SHOULD)**: only after T063 passes (Constitution IV, SC-007).
 - **Phase 10 (Polish)**: after Phase 8; T073 after Phase 9 if SHOULD work is shipped.
+- **Phase 11 (V2)**: after the `v1` tag. T074 first; then the tests (T075–T078) before the code they cover (T079–T083); T084 gate; T085–T086 last.
 
 ### User Story Dependencies (shared files)
 

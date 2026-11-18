@@ -22,6 +22,11 @@ export const LABEL: {
 };
 export function containsLabel(allergen: AllergenId): `Contains ${string}`;        // REQ-04
 export function crossContactLabel(eq: Equipment): `Cross-contact: ${string}`;     // REQ-07
+export function tracesLabel(traces: boolean): "Traces: yes" | "Traces: no";      // REQ-01, REQ-06 (V2)
+export function changeLabel(change: string): `Chef-approved change: ${string}`;  // REQ-20 (V2)
+
+/** Chef-approved changes offered for a dish that shows "Contains" for these allergies. */
+export function approvedChangesFor(dish: DishRecord, seatAllergies: readonly Allergy[]): string[]; // REQ-20
 
 /** Labels for one dish (menu row) or one order item, for one seat, on the tablet. */
 export function dishLabels(
@@ -31,7 +36,7 @@ export function dishLabels(
 ): string[];                                         // REQ-04, REQ-05, REQ-12, REQ-13, REQ-15, REQ-16
 
 /** Text lines for one allergy item on the kitchen display. */
-export function kitchenItemText(item: OrderItem, dish: DishRecord): string[];      // REQ-06, REQ-07
+export function kitchenItemText(item: OrderItem, dish: DishRecord): string[];      // REQ-06, REQ-07, REQ-20
 ```
 
 ## `domain/kitchen.ts`
@@ -43,7 +48,10 @@ export function offeredActions(
   item: OrderItem, ticket: Ticket, dish: DishRecord, role: Role,
 ): KitchenAction[];                                  // REQ-09, REQ-10, REQ-11, REQ-14
 
-export function sortTickets(tickets: readonly Ticket[], items: AppState["orderItems"]): Ticket[]; // REQ-08
+/** V2: true when the dish lists an allergen from the item's allergy snapshot (blocks Confirm). */
+export function listsSnapshotAllergen(item: OrderItem, dish: DishRecord): boolean; // REQ-10
+
+export function sortTickets(tickets: readonly Ticket[], items: AppState["orderItems"]): Ticket[]; // REQ-08 (three ranks in V2)
 
 export function isEscalated(ticket: Ticket, items: AppState["orderItems"], nowMs: number,
   escalationMs?: number): boolean;                   // REQ-21 (SHOULD), default 60_000 (A-4)
@@ -56,9 +64,10 @@ export function isEscalated(ticket: Ticket, items: AppState["orderItems"], nowMs
 | `recordAllergy` | `{tableId, seatNumber, allergens, severity, traces, note?}` | REQ-01, REQ-02 | Empty allergens / missing severity / missing traces → unchanged |
 | `addItem` | `{tableId, seatNumber, dishId}` | REQ-02, REQ-03 | Unknown dish → unchanged |
 | `removeDraftItem` | `{itemId}` | – | Item already sent → unchanged |
-| `sendOrder` | `{tableId}` | REQ-03, REQ-06, A-7, A-8 | No draft items → unchanged |
+| `pickChange` | `{itemId, change: string \| null}` | REQ-20 (V2) | Item already sent, or `change` not in `approvedChangesFor(dish, seat allergies)` → unchanged. `null` clears |
+| `sendOrder` | `{tableId}` | REQ-03, REQ-06, REQ-20, A-7, A-8 | No draft items → unchanged. A `pickedChange` no longer offered is set to `null` (R-16) |
 | `acknowledge` | `{ticketId, role}` | REQ-09 | Role ≠ station lead, or ticket already acknowledged → unchanged |
-| `confirm` | `{itemId, role}` | REQ-10 | Role ≠ station lead, status ≠ Acknowledged, or dish info not complete → unchanged |
+| `confirm` | `{itemId, role}` | REQ-10 | Role ≠ station lead, status ≠ Acknowledged, dish info not complete, or dish lists a snapshot allergen (V2) → unchanged |
 | `cannotConfirm` | `{itemId, role, reason}` | REQ-11 | Role ≠ station lead, status ≠ Acknowledged, or blank reason → unchanged |
 | `signOff` | `{itemId, role}` | REQ-14 | Role ≠ expediter, status ≠ Confirmed, or already signed off → unchanged |
 | `reset` | – | A-10 | – |
@@ -76,7 +85,7 @@ export function createStore(deps: {
   storage: StorageLike;
   channel: ChannelLike | null;      // null when BroadcastChannel is unavailable
   now: () => Date;
-  onExternalChange?: (subscribe: (cb: () => void) => () => void) => void; // storage/visibility hooks
+  onExternalChange?: (refresh: () => void) => (() => void) | void; // storage/visibility hooks call refresh; may return a cleanup
 }): {
   getSnapshot(): AppState;
   subscribe(cb: () => void): () => void;

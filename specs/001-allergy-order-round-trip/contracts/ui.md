@@ -39,18 +39,27 @@ this tab and opens the route for that role. There is no password or login (Const
    (REQ-02), its `dishLabels(...)` (including kitchen status after sending, REQ-12, REQ-13,
    REQ-15) and "Allergy order" when that applies (REQ-03). "Send order" sends all drafts for the
    table.
+   - **V2, change picker (REQ-20, R-16)**: under a draft item that shows "Contains <allergen>",
+     one toggle button per offered chef-approved change, named by the change text (e.g. "Without
+     walnuts", `aria-pressed`). Tap to pick, tap again to clear, tap another to replace. A picked
+     change shows "Chef-approved change: <text>" on the item, before and after sending. Sent items
+     have no picker. The labels do not change (C-12).
 
 Sending a dish that shows "Contains <allergen>" is allowed, with no block or warning (Clarifications).
 
 ## Kitchen display (`/kitchen`)
 
 - **Role switch** in the header: "Station lead" / "Expediter" (R-5).
-- **Tickets** ordered by `sortTickets` (REQ-08). Each ticket shows its table and sent time.
+- **Tickets** ordered by `sortTickets` (REQ-08). Each ticket shows its table and sent time. In
+  V2 an acknowledged allergy ticket stays above all normal tickets until each allergy item is
+  signed off or marked "Cannot confirm" (R-18).
 - **Allergy ticket that is not acknowledged**: label "ALLERGY – NOT ACKNOWLEDGED" (REQ-08), and
   an "Acknowledge" button for the station lead (REQ-09).
-- **Allergy item**: the `kitchenItemText` lines (REQ-06, REQ-07), the kitchen status, and the
-  buttons from `offeredActions`:
-  - "Confirm": station lead, status Acknowledged, dish info complete (REQ-10)
+- **Allergy item**: the `kitchenItemText` lines (REQ-06, REQ-07; in V2 also "Traces: yes/no" and
+  "Chef-approved change: <text>", REQ-06, REQ-20), the kitchen status, and the buttons from
+  `offeredActions`:
+  - "Confirm": station lead, status Acknowledged, dish info complete, and (V2) the dish lists none
+    of the snapshot's allergens (REQ-10)
   - "Cannot confirm": station lead, status Acknowledged. Opens an inline "Reason" field (required)
     and a "Save" button (REQ-11)
   - "Sign off": expediter, status Confirmed, not signed off (REQ-14)
@@ -60,7 +69,8 @@ Sending a dish that shows "Contains <allergen>" is allowed, with no block or war
 
 `Contains <allergen>` · `Not confirmed` · `Cannot confirm` · `Reason: <text>` · `Kitchen: Sent`
 · `Kitchen: Acknowledged` · `Confirmed` · `OK to serve` · `Allergy order` ·
-`ALLERGY – NOT ACKNOWLEDGED` · `Cross-contact: <fryer|base|utensil>`
+`ALLERGY – NOT ACKNOWLEDGED` · `Cross-contact: <fryer|base|utensil>` · `Traces: yes` ·
+`Traces: no` · `Chef-approved change: <text from the dish record>` (V2)
 
 No screen, in any state, shows text that matches `/safe|allergen[\s-]*free/i`
 (REQ-05, SC-002, R-13).
