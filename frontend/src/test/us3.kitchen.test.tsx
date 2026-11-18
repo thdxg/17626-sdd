@@ -1,4 +1,4 @@
-import { act } from '@testing-library/react'
+import { act, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { LABEL } from '../domain/labels'
 import { renderApp } from './renderApp'
@@ -94,5 +94,52 @@ describe('US3 kitchen display', () => {
     expect(t.itemIds).toHaveLength(2)
     for (const el of orderItems(r.container)) expect(el.dataset.sent).toBe('true')
     expect(r.screen.queryByRole('button', { name: /^Remove / })).toBeNull()
+  })
+
+  it('REQ-06: an allergy item shows "Traces: yes" as text when the seat allergy says traces matter (scenario 8)', () => {
+    const { state, ticket } = kitchenState()
+    const r = renderApp({ path: '/kitchen', role: 'station lead', state })
+    for (const dish of ['walnut-salad', 'steak-frites']) expect(text(kitchenItem(r.container, dish, 3))).toContain('Traces: yes')
+    const card = ticketCards(r.container).find((c) => c.dataset.ticket === ticket.id)!
+    expect(text(kitchenItem(card, 'green-salad', 2))).not.toContain('Traces')
+  })
+
+  it('REQ-06: "Traces: no" when the seat allergy says traces do not matter', () => {
+    const s = withAllergy(seed(), 'T12', 3, { traces: false })
+    const { state } = withSentAllergyTicket(s, { tableId: 'T12', items: [{ seat: 3, dishId: 'steak-frites' }] })
+    const r = renderApp({ path: '/kitchen', role: 'station lead', state })
+    expect(text(kitchenItem(r.container, 'steak-frites', 3))).toContain('Traces: no')
+  })
+
+  it('REQ-08: after "Acknowledge" the allergy ticket stays above the seeded normal tickets (scenario 9)', async () => {
+    const { state, ticket } = kitchenState()
+    const r = renderApp({ path: '/kitchen', role: 'station lead', state: withDraftItem(state, 'T11', 1, 'risotto') })
+    await r.user.click(r.screen.getByRole('button', { name: 'Acknowledge' }))
+    r.shared.clock.advance(60_000)
+    act(() => r.store.dispatch({ type: 'sendOrder', tableId: 'T11' }))
+    const cards = ticketCards(r.container)
+    expect(cards).toHaveLength(4)
+    expect(cards[0].dataset.ticket).toBe(ticket.id)
+    // Rank 1 has no label (R-18); only rank 0 shows "ALLERGY – NOT ACKNOWLEDGED".
+    expect(text(cards[0])).not.toContain(LABEL.allergyNotAcknowledged)
+  })
+
+  it('REQ-10 REQ-20: the walnut salad shows the picked change and offers no "Confirm"; steak frites still does (US4 scenario 8)', () => {
+    const s = withAllergy(seed(), 'T12', 3, { allergens: ['tree-nuts'], severity: 'severe' })
+    const { state } = withSentAllergyTicket(s, {
+      tableId: 'T12',
+      items: [
+        { seat: 3, dishId: 'walnut-salad', kitchenStatus: 'Acknowledged', pickedChange: 'Without walnuts' },
+        { seat: 3, dishId: 'steak-frites', kitchenStatus: 'Acknowledged' },
+      ],
+    })
+    const r = renderApp({ path: '/kitchen', role: 'station lead', state })
+    const salad = kitchenItem(r.container, 'walnut-salad', 3)
+    expect(text(salad)).toContain('Chef-approved change: Without walnuts')
+    expect(within(salad).queryByRole('button', { name: 'Confirm' })).toBeNull()
+    expect(within(salad).getByRole('button', { name: 'Cannot confirm' })).toBeTruthy()
+    const steak = kitchenItem(r.container, 'steak-frites', 3)
+    expect(text(steak)).not.toContain('Chef-approved change')
+    expect(within(steak).getByRole('button', { name: 'Confirm' })).toBeTruthy()
   })
 })

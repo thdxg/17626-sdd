@@ -4,8 +4,6 @@ import { renderApp } from './renderApp'
 import { seed, withAllergy, withDraftItem } from './fixtures'
 import { dishRow, labelsIn, orderItem } from './dom'
 
-const FORBIDDEN = /safe|allergen[\s-]*free/i
-
 function approvedChanges(el: HTMLElement): string[] {
   return [...el.querySelectorAll<HTMLElement>('[data-approved-change]')].map((x) => x.textContent ?? '')
 }
@@ -31,23 +29,7 @@ describe('US2 SHOULD', () => {
     expect(labelsIn(orderItem(r.container, 'steak-frites', 3))).toContain(LABEL.notConfirmed)
   })
 
-  it('REQ-20: a "Contains" dish offers only its chef-approved changes for that allergen (scenario 7)', async () => {
-    let s = withAllergy(seed(), 'T12', 3, { allergens: ['tree-nuts'] })
-    s = withDraftItem(s, 'T12', 3, 'walnut-salad')
-    s = withDraftItem(s, 'T12', 3, 'almond-tart')
-    const r = renderApp({ path: '/server', role: 'server', state: s })
-    await openSeat3(r)
-
-    expect(approvedChanges(dishRow(r.container, 'walnut-salad'))).toEqual(['Without walnuts'])
-    expect(approvedChanges(dishRow(r.container, 'almond-tart'))).toEqual([])
-    expect(approvedChanges(orderItem(r.container, 'walnut-salad', 3))).toEqual(['Without walnuts'])
-    expect(approvedChanges(orderItem(r.container, 'almond-tart', 3))).toEqual([])
-    // Risotto has an approved change for milk only; this seat has a tree-nut allergy.
-    expect(approvedChanges(dishRow(r.container, 'risotto'))).toEqual([])
-    // No free-text change field anywhere on the menu or order.
-    expect(r.screen.queryByLabelText(/change/i)).toBeNull()
-    expect(document.body.textContent).not.toMatch(FORBIDDEN)
-  })
+  // The REQ-20 scenario 7 case moved to us2.change.test.tsx (V2: REQ-20 is MUST, picked on the order item).
 
   it('REQ-20: the milk change on risotto is offered only for a seat with a milk allergy', async () => {
     const s = withAllergy(seed(), 'T12', 3, { allergens: ['milk'] })

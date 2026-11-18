@@ -1,9 +1,10 @@
 // Inline allergy panel, always visible on the seat view (contracts/ui.md §Server tablet 3, R-11).
-// Recording one allergen: allergen → severity → traces → Save = 4 taps. REQ-01, REQ-17
+// Recording one allergen: allergen → severity → traces → Save = 4 taps. REQ-01, REQ-06, REQ-17
 import { useState } from 'react'
 import type { AllergenId, Severity } from '../../domain/types'
 import { SEVERITIES, SEVERITY_DISPLAY } from '../../domain/types'
 import { ALLERGENS } from '../../data/allergens'
+import { tracesLabel } from '../../domain/labels'
 import { useDispatch } from '../../store/useAppState'
 
 export function AllergyPanel(props: { tableId: string; seatNumber: number }) {
@@ -65,10 +66,10 @@ export function AllergyPanel(props: { tableId: string; seatNumber: number }) {
       </div>
       <div className="chips" role="group" aria-label="Traces">
         <button type="button" className="chip" aria-pressed={traces === true} onClick={() => setTraces(true)}>
-          Traces: yes
+          {tracesLabel(true)}
         </button>
         <button type="button" className="chip" aria-pressed={traces === false} onClick={() => setTraces(false)}>
-          Traces: no
+          {tracesLabel(false)}
         </button>
       </div>
       <details className="note">

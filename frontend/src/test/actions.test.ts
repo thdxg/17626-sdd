@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Action } from '../domain/actions'
 import { reduce } from '../domain/actions'
-import type { AppState, KitchenStatus } from '../domain/types'
+import type { AllergenId, AppState, KitchenStatus } from '../domain/types'
 import { seed, withAllergy, withDraftItem, withSentAllergyTicket } from './fixtures'
 
 const NOW = new Date('2026-11-16T12:00:00.000Z')
@@ -97,6 +97,7 @@ describe('recordAllergy / addItem', () => {
       review: null,
       cannotConfirm: null,
       signOff: null,
+      pickedChange: null,
     })
   })
 
@@ -264,5 +265,100 @@ describe('confirm / cannotConfirm / signOff', () => {
     expect(run(state, { type: 'signOff', itemId, role: 'station lead' })).toBe(state)
     const once = run(state, { type: 'signOff', itemId, role: 'expediter' })
     expect(run(once, { type: 'signOff', itemId, role: 'expediter' })).toBe(once)
+  })
+})
+
+describe('confirm — dish lists the seat\'s allergen (V2, REQ-10)', () => {
+  function ackedSalad(pickedChange?: string) {
+    const { state, items } = withSentAllergyTicket(withAllergy(seed(), 'T12', 3, { allergens: ['tree-nuts'] }), {
+      tableId: 'T12',
+      items: [{ seat: 3, dishId: 'walnut-salad', kitchenStatus: 'Acknowledged', pickedChange }],
+    })
+    return { state, itemId: items[0].id }
+  }
+
+  it('REQ-10: confirm on an acknowledged walnut salad for a tree-nut seat returns the same reference (US4 scenario 8)', () => {
+    const { state, itemId } = ackedSalad()
+    const next = run(state, { type: 'confirm', itemId, role: 'station lead' })
+    expect(next).toBe(state)
+    expect(next.orderItems[itemId].kitchenStatus).toBe('Acknowledged')
+  })
+
+  it('REQ-10: confirm still returns the same reference when a chef-approved change was picked (C-12)', () => {
+    const { state, itemId } = ackedSalad('Without walnuts')
+    expect(run(state, { type: 'confirm', itemId, role: 'station lead' })).toBe(state)
+  })
+
+  it('REQ-10 REQ-11: "Cannot confirm" with a reason still works on that item', () => {
+    const { state, itemId } = ackedSalad('Without walnuts')
+    const next = run(state, { type: 'cannotConfirm', itemId, role: 'station lead', reason: 'Dish lists tree nuts' })
+    expect(next.orderItems[itemId].kitchenStatus).toBe('Cannot confirm')
+  })
+})
+
+describe('pickChange / sendOrder with a picked change (V2, REQ-20)', () => {
+  function draftSalad(allergens: AllergenId[] | null = ['tree-nuts'], dishId = 'walnut-salad') {
+    const s = allergens ? withAllergy(seed(), 'T12', 3, { allergens }) : seed()
+    const next = withDraftItem(s, 'T12', 3, dishId)
+    const itemId = Object.keys(next.orderItems).find((k) => !(k in s.orderItems))!
+    return { state: next, itemId }
+  }
+  const pick = (itemId: string, change: string | null): Action => ({ type: 'pickChange', itemId, change })
+
+  it('REQ-20: picking "Without walnuts" on a draft walnut salad for a tree-nut seat sets it', () => {
+    const { state, itemId } = draftSalad()
+    const next = run(state, pick(itemId, 'Without walnuts'))
+    expect(next.orderItems[itemId].pickedChange).toBe('Without walnuts')
+    expect(state.orderItems[itemId].pickedChange).toBeNull() // not mutated
+  })
+
+  it('REQ-20: picking null clears it', () => {
+    const { state, itemId } = draftSalad()
+    const picked = run(state, pick(itemId, 'Without walnuts'))
+    expect(run(picked, pick(itemId, null)).orderItems[itemId].pickedChange).toBeNull()
+  })
+
+  it('REQ-20: a change that is not offered returns the same reference', () => {
+    const wrong = draftSalad()
+    expect(run(wrong.state, pick(wrong.itemId, 'Without pears'))).toBe(wrong.state)
+    expect(run(wrong.state, pick(wrong.itemId, 'Olive oil instead of butter and parmesan'))).toBe(wrong.state)
+    const tart = draftSalad(['tree-nuts'], 'almond-tart')
+    expect(run(tart.state, pick(tart.itemId, 'Without walnuts'))).toBe(tart.state)
+    const milkSeat = draftSalad(['milk'])
+    expect(run(milkSeat.state, pick(milkSeat.itemId, 'Without walnuts'))).toBe(milkSeat.state)
+    const noAllergy = draftSalad(null)
+    expect(run(noAllergy.state, pick(noAllergy.itemId, 'Without walnuts'))).toBe(noAllergy.state)
+    expect(run(wrong.state, pick('nope', 'Without walnuts'))).toBe(wrong.state)
+  })
+
+  it('REQ-20: pickChange on a sent item returns the same reference', () => {
+    const { state, items } = withSentAllergyTicket(withAllergy(seed(), 'T12', 3), {
+      tableId: 'T12',
+      items: [{ seat: 3, dishId: 'walnut-salad' }],
+    })
+    expect(run(state, pick(items[0].id, 'Without walnuts'))).toBe(state)
+    const pickedSent = withSentAllergyTicket(withAllergy(seed(), 'T12', 3), {
+      tableId: 'T12',
+      items: [{ seat: 3, dishId: 'walnut-salad', pickedChange: 'Without walnuts' }],
+    })
+    expect(run(pickedSent.state, pick(pickedSent.items[0].id, null))).toBe(pickedSent.state)
+  })
+
+  it('REQ-20: at send a change that is still offered is kept', () => {
+    const { state, itemId } = draftSalad()
+    const sent = run(run(state, pick(itemId, 'Without walnuts')), { type: 'sendOrder', tableId: 'T12' })
+    expect(sent.orderItems[itemId].ticketId).not.toBeNull()
+    expect(sent.orderItems[itemId].pickedChange).toBe('Without walnuts')
+  })
+
+  it.each(['removed', 'changed to milk'] as const)('REQ-20: at send a change that is no longer offered (allergy %s) becomes null', (how) => {
+    const { state, itemId } = draftSalad()
+    const picked = run(state, pick(itemId, 'Without walnuts'))
+    const seat = picked.seats['T12:3']
+    const allergies = how === 'removed' ? [] : seat.allergies.map((a) => ({ ...a, allergens: ['milk'] as AllergenId[] }))
+    const changed: AppState = { ...picked, seats: { ...picked.seats, 'T12:3': { ...seat, allergies } } }
+    const sent = run(changed, { type: 'sendOrder', tableId: 'T12' })
+    expect(sent.orderItems[itemId].ticketId).not.toBeNull()
+    expect(sent.orderItems[itemId].pickedChange).toBeNull()
   })
 })

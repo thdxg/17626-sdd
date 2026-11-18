@@ -5,6 +5,7 @@ import { SEVERITIES, seatKey } from './types'
 import { isAllergyOrder } from './allergyOrder'
 import { isAllergyTicket, offeredActions } from './kitchen'
 import type { KitchenAction } from './kitchen'
+import { approvedChangesFor } from './labels'
 import { createSeed } from '../data/seed'
 import { isAllergenId } from '../data/allergens'
 import { dishById } from '../data/dishes'
@@ -21,6 +22,7 @@ export type Action =
     }
   | { type: 'addItem'; tableId: string; seatNumber: number; dishId: string }
   | { type: 'removeDraftItem'; itemId: string }
+  | { type: 'pickChange'; itemId: string; change: string | null }
   | { type: 'sendOrder'; tableId: string }
   | { type: 'acknowledge'; ticketId: string; role: Role }
   | { type: 'confirm'; itemId: string; role: Role }
@@ -77,6 +79,7 @@ function addItem(state: AppState, a: Extract<Action, { type: 'addItem' }>, now: 
     review: null,
     cannotConfirm: null,
     signOff: null,
+    pickedChange: null,
   }
   return { ...state, orderItems: { ...state.orderItems, [item.id]: item } }
 }
@@ -89,7 +92,23 @@ function removeDraftItem(state: AppState, a: Extract<Action, { type: 'removeDraf
   return { ...state, orderItems }
 }
 
-/** REQ-03, REQ-06 (A-7, A-8): one ticket with every draft of the table; snapshot the seat allergies. */
+/** The chef-approved changes offered for a draft item, from its seat's current allergies (REQ-20). */
+function offeredChanges(state: AppState, item: OrderItem): string[] {
+  const dish = dishById(item.dishId)
+  if (!dish) return []
+  return approvedChangesFor(dish, state.seats[seatKey(item.tableId, item.seatNumber)]?.allergies ?? [])
+}
+
+/** REQ-20 (V2, R-16): pick one offered change on a draft item, or clear it with null. */
+function pickChange(state: AppState, a: Extract<Action, { type: 'pickChange' }>): AppState {
+  const item = state.orderItems[a.itemId]
+  if (!item || item.ticketId !== null) return state // fixed after send
+  if (a.change !== null && !offeredChanges(state, item).includes(a.change)) return state // only chef-approved
+  if (item.pickedChange === a.change) return state
+  return { ...state, orderItems: { ...state.orderItems, [item.id]: { ...item, pickedChange: a.change } } }
+}
+
+/** REQ-03, REQ-06, REQ-20 (A-7, A-8): one ticket with every draft of the table; snapshot the seat allergies. */
 function sendOrder(state: AppState, a: Extract<Action, { type: 'sendOrder' }>, now: Date): AppState {
   const drafts = Object.values(state.orderItems).filter((i) => i.tableId === a.tableId && i.ticketId === null)
   if (drafts.length === 0) return state
@@ -105,8 +124,11 @@ function sendOrder(state: AppState, a: Extract<Action, { type: 'sendOrder' }>, n
   for (const d of drafts) {
     const allergies = state.seats[seatKey(d.tableId, d.seatNumber)]?.allergies ?? []
     const allergyOrder = isAllergyOrder(allergies)
+    // REQ-20 (R-16): keep a picked change only if it is still offered for the seat's allergies now.
+    const pickedChange = d.pickedChange !== null && offeredChanges(state, d).includes(d.pickedChange) ? d.pickedChange : null
     orderItems[d.id] = {
       ...d,
+      pickedChange,
       ticketId: ticket.id,
       allergySnapshot: structuredClone(allergies),
       isAllergyOrder: allergyOrder,
@@ -190,6 +212,8 @@ export function reduce(state: AppState, action: Action, now: Date): AppState {
       return addItem(state, action, now)
     case 'removeDraftItem':
       return removeDraftItem(state, action)
+    case 'pickChange':
+      return pickChange(state, action)
     case 'reset':
       return createSeed() // REQ-12 (A-10): the store sets the revision.
     default:

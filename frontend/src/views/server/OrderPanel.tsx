@@ -1,14 +1,13 @@
 // Order for the selected table, grouped by seat.
 // REQ-02, REQ-03, REQ-04, REQ-05, REQ-12, REQ-13, REQ-15, REQ-16, REQ-20
 import { isAllergyOrder } from '../../domain/allergyOrder'
-import { LABEL, dishLabels } from '../../domain/labels'
+import { LABEL, approvedChangesFor, changeLabel, dishLabels } from '../../domain/labels'
 import { Labels } from '../Labels'
 import type { AppState, OrderItem, Table } from '../../domain/types'
 import { seatKey } from '../../domain/types'
 import { dishById } from '../../data/dishes'
 import { useDispatch } from '../../store/useAppState'
 import { allergyText } from './text'
-import { ApprovedChanges } from './ApprovedChanges'
 
 function OrderItemRow({ item, state }: { item: OrderItem; state: AppState }) {
   const dispatch = useDispatch()
@@ -18,6 +17,7 @@ function OrderItemRow({ item, state }: { item: OrderItem; state: AppState }) {
   // Draft items use the seat's current allergies; sent items use the snapshot (R-10).
   const allergies = draft ? (state.seats[seatKey(item.tableId, item.seatNumber)]?.allergies ?? []) : (item.allergySnapshot ?? [])
   const allergyOrder = draft ? isAllergyOrder(allergies) : item.isAllergyOrder === true
+  const changes = draft ? approvedChangesFor(dish, allergies) : []
   return (
     <li data-testid="order-item" data-dish={item.dishId} data-seat={item.seatNumber} data-sent={!draft}>
       <span className="dish-name">{dish.name}</span>
@@ -28,7 +28,30 @@ function OrderItemRow({ item, state }: { item: OrderItem; state: AppState }) {
       )}
       {/* Recomputed from the latest snapshot on every render (REQ-12, REQ-13, REQ-15). */}
       <Labels labels={draft ? dishLabels(dish, allergies) : dishLabels(dish, allergies, item)} />
-      <ApprovedChanges dish={dish} seatAllergies={allergies} />
+      {/* REQ-20 (V2, R-16): one toggle per offered chef-approved change, on draft items only. The
+          labels above do not change when a change is picked (C-12). */}
+      {draft && changes.length > 0 && (
+        <span className="chips changes">
+          {changes.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className="chip"
+              aria-pressed={item.pickedChange === c}
+              onClick={() =>
+                dispatch({ type: 'pickChange', itemId: item.id, change: item.pickedChange === c ? null : c })
+              }
+            >
+              {c}
+            </button>
+          ))}
+        </span>
+      )}
+      {item.pickedChange !== null && (
+        <span className="picked-change" data-testid="picked-change">
+          {changeLabel(item.pickedChange)}
+        </span>
+      )}
       {allergies.length > 0 && (
         <span className="item-allergies">{allergies.map(allergyText).join('; ')}</span>
       )}

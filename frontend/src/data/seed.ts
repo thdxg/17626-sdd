@@ -32,6 +32,7 @@ function normalItem(id: string, tableId: string, seatNumber: number, dishId: str
     review: null,
     cannotConfirm: null,
     signOff: null,
+    pickedChange: null,
   }
 }
 
@@ -48,7 +49,7 @@ export function createSeed(): AppState {
     normalItem('seed-item-3', 'T11', 1, 'roast-chicken', 'seed-ticket-2', SEED_TIME_2),
   ]
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     revision: 0,
     tables: TABLES.map((t) => ({ ...t })),
     seats,

@@ -23,7 +23,7 @@ export function containsLabel(allergen: AllergenId): `Contains ${string}` {
 }
 
 /**
- * REQ-20 (SHOULD): for each seat allergen the dish lists (i.e. each "Contains" label), only the
+ * REQ-20: for each seat allergen the dish lists (i.e. each "Contains" label), only the
  * changes the dish record lists as chef-approved for that allergen. Never free text.
  */
 export function approvedChangesFor(dish: DishRecord, seatAllergies: readonly Allergy[]): string[] {
@@ -36,17 +36,39 @@ export function approvedChangesFor(dish: DishRecord, seatAllergies: readonly All
   return out
 }
 
+/** REQ-01, REQ-06 (V2): the same wording on the tablet chips and the kitchen item. */
+export function tracesLabel(traces: boolean): 'Traces: yes' | 'Traces: no' {
+  return traces ? 'Traces: yes' : 'Traces: no'
+}
+
+/** REQ-20 (V2): the chef-approved change the server picked. */
+export function changeLabel(change: string): `Chef-approved change: ${string}` {
+  return `Chef-approved change: ${change}`
+}
+
 /** REQ-07 */
 export function crossContactLabel(eq: Equipment): `Cross-contact: ${string}` {
   return `Cross-contact: ${eq}`
 }
 
-/** Text lines for one allergy item on the kitchen display (data-model.md §Kitchen item text). REQ-06, REQ-07 */
+/**
+ * Text lines for one allergy item on the kitchen display (data-model.md §Kitchen item text):
+ * allergens, severities, traces ("yes" if any snapshot allergy says so, R-17), seat,
+ * cross-contact, and the picked change last. REQ-06, REQ-07, REQ-20
+ */
 export function kitchenItemText(item: OrderItem, dish: DishRecord): string[] {
   const snapshot = item.allergySnapshot ?? []
   const allergens = [...new Set(snapshot.flatMap((a) => a.allergens))].map(allergenName)
   const severities = [...new Set(snapshot.map((a) => a.severity))].map((s) => SEVERITY_DISPLAY[s])
-  return [...allergens, ...severities, `seat ${item.seatNumber}`, ...dish.sharedEquipment.map(crossContactLabel)]
+  const lines = [
+    ...allergens,
+    ...severities,
+    tracesLabel(snapshot.some((a) => a.traces)),
+    `seat ${item.seatNumber}`,
+    ...dish.sharedEquipment.map(crossContactLabel),
+  ]
+  if (item.pickedChange !== null) lines.push(changeLabel(item.pickedChange))
+  return lines
 }
 
 /**

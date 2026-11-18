@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { dishById } from '../data/dishes'
-import { offeredActions, sortTickets } from '../domain/kitchen'
+import { listsSnapshotAllergen, offeredActions, sortTickets } from '../domain/kitchen'
 import { kitchenItemText } from '../domain/labels'
-import type { AppState, DishRecord, OrderItem, Ticket } from '../domain/types'
+import type { DishRecord, KitchenStatus, OrderItem, Ticket } from '../domain/types'
 import { seed, withAllergy, withSentAllergyTicket } from './fixtures'
 
 const dish = (id: string) => dishById(id)!
@@ -43,6 +43,45 @@ describe('kitchenItemText', () => {
   })
 })
 
+describe('kitchenItemText — traces (V2)', () => {
+  it('REQ-06: "Traces: yes" when the snapshot allergy has traces: true, right after the severity (US3 scenario 8)', () => {
+    const { item } = sentItem('walnut-salad', withAllergy(seed(), 'T12', 3, { traces: true }))
+    const lines = kitchenItemText(item, dish('walnut-salad'))
+    expect(lines).toContain('Traces: yes')
+    expect(lines).not.toContain('Traces: no')
+    expect(lines.indexOf('Traces: yes')).toBe(lines.indexOf('severe allergy') + 1)
+    expect(lines.indexOf('seat 3')).toBe(lines.indexOf('Traces: yes') + 1)
+  })
+
+  it('REQ-06: "Traces: no" when the snapshot allergy has traces: false', () => {
+    const { item } = sentItem('walnut-salad', withAllergy(seed(), 'T12', 3, { traces: false }))
+    const lines = kitchenItemText(item, dish('walnut-salad'))
+    expect(lines).toContain('Traces: no')
+    expect(lines).not.toContain('Traces: yes')
+  })
+
+  it('REQ-06: two allergies that disagree on traces show "Traces: yes" once (R-17)', () => {
+    let s = withAllergy(seed(), 'T12', 3, { allergens: ['tree-nuts'], severity: 'severe', traces: false })
+    s = withAllergy(s, 'T12', 3, { allergens: ['milk'], severity: 'intolerance', traces: true })
+    const { item } = sentItem('steak-frites', s)
+    const lines = kitchenItemText(item, dish('steak-frites'))
+    expect(lines.filter((l) => l.startsWith('Traces:'))).toEqual(['Traces: yes'])
+    expect(lines.indexOf('Traces: yes')).toBe(lines.indexOf('intolerance') + 1)
+  })
+
+  it('REQ-20: a picked change is the last line; no change line when none was picked', () => {
+    const s = withAllergy(seed(), 'T12', 3)
+    const picked = withSentAllergyTicket(s, {
+      tableId: 'T12',
+      items: [{ seat: 3, dishId: 'walnut-salad', pickedChange: 'Without walnuts' }],
+    }).items[0]
+    const lines = kitchenItemText(picked, dish('walnut-salad'))
+    expect(lines[lines.length - 1]).toBe('Chef-approved change: Without walnuts')
+    const { item } = sentItem('walnut-salad', s)
+    expect(kitchenItemText(item, dish('walnut-salad')).some((l) => l.startsWith('Chef-approved change'))).toBe(false)
+  })
+})
+
 describe('sortTickets', () => {
   function stateWithTickets() {
     const base = withAllergy(seed(), 'T12', 3)
@@ -73,13 +112,61 @@ describe('sortTickets', () => {
     expect(ids(sortTickets(s2.tickets, s2.orderItems))).toEqual([allergyTicket.id, 'seed-ticket-1', 'seed-ticket-2', newer.id])
   })
 
-  it('REQ-08: once acknowledged it drops back into sentAt order', () => {
-    const { state, allergyTicket } = stateWithTickets()
-    const acked: AppState = {
-      ...state,
-      tickets: state.tickets.map((t) => (t.id === allergyTicket.id ? { ...t, acknowledgedAt: '2026-11-16T12:01:00.000Z' } : t)),
-    }
-    expect(ids(sortTickets(acked.tickets, acked.orderItems))).toEqual(['seed-ticket-1', 'seed-ticket-2', allergyTicket.id])
+  // V2: replaces the V1 case "once acknowledged it drops back into sentAt order" (REQ-08 second sentence, R-18).
+  it('REQ-08: once acknowledged it stays above older and newer normal tickets while an allergy item is open (US3 scenario 9)', () => {
+    const base = withAllergy(seed(), 'T12', 3)
+    const { state, ticket: allergyTicket } = withSentAllergyTicket(base, {
+      tableId: 'T12',
+      sentAt: '2026-11-16T12:00:00.000Z',
+      items: [{ seat: 3, dishId: 'steak-frites', kitchenStatus: 'Acknowledged' }],
+    })
+    expect(allergyTicket.acknowledgedAt).not.toBeNull()
+    const { state: s2, ticket: newer } = withSentAllergyTicket(state, {
+      tableId: 'T11',
+      sentAt: '2026-11-16T12:05:00.000Z',
+      items: [{ seat: 2, dishId: 'risotto' }],
+    })
+    expect(ids(sortTickets(s2.tickets, s2.orderItems))).toEqual([allergyTicket.id, 'seed-ticket-1', 'seed-ticket-2', newer.id])
+  })
+
+  function ackedTicket(items: Array<{ kitchenStatus: KitchenStatus; signOff?: boolean }>) {
+    const base = withAllergy(seed(), 'T12', 3)
+    return withSentAllergyTicket(base, {
+      tableId: 'T12',
+      sentAt: '2026-11-16T12:00:00.000Z',
+      acknowledged: true,
+      items: items.map((i) => ({ seat: 3, dishId: 'steak-frites', ...i })),
+    })
+  }
+
+  it.each([
+    ['Confirmed, not signed off', [{ kitchenStatus: 'Confirmed' as const }]],
+    ['Acknowledged', [{ kitchenStatus: 'Acknowledged' as const }]],
+    ['one signed off, one still Acknowledged', [{ kitchenStatus: 'Confirmed' as const, signOff: true }, { kitchenStatus: 'Acknowledged' as const }]],
+    ['one Cannot confirm, one Confirmed not signed off', [{ kitchenStatus: 'Cannot confirm' as const }, { kitchenStatus: 'Confirmed' as const }]],
+  ])('REQ-08: an acknowledged allergy ticket with an open item (%s) stays above all normal tickets', (_name, items) => {
+    const { state, ticket } = ackedTicket(items)
+    expect(ids(sortTickets(state.tickets, state.orderItems))).toEqual([ticket.id, 'seed-ticket-1', 'seed-ticket-2'])
+  })
+
+  it.each([
+    ['every item signed off', [{ kitchenStatus: 'Confirmed' as const, signOff: true }, { kitchenStatus: 'Confirmed' as const, signOff: true }]],
+    ['every item Cannot confirm', [{ kitchenStatus: 'Cannot confirm' as const }]],
+    ['one signed off, one Cannot confirm', [{ kitchenStatus: 'Confirmed' as const, signOff: true }, { kitchenStatus: 'Cannot confirm' as const }]],
+  ])('REQ-08: once no allergy item is open (%s) it drops back into sentAt order', (_name, items) => {
+    const { state, ticket } = ackedTicket(items)
+    expect(ids(sortTickets(state.tickets, state.orderItems))).toEqual(['seed-ticket-1', 'seed-ticket-2', ticket.id])
+  })
+
+  it('REQ-08: an unacknowledged allergy ticket stays above an older acknowledged allergy ticket with an open item', () => {
+    const { state: s1, ticket: acked } = ackedTicket([{ kitchenStatus: 'Acknowledged' }])
+    const { state, ticket: fresh } = withSentAllergyTicket(withAllergy(s1, 'T11', 1), {
+      tableId: 'T11',
+      sentAt: '2026-11-16T12:03:00.000Z',
+      items: [{ seat: 1, dishId: 'risotto' }],
+    })
+    expect(fresh.acknowledgedAt).toBeNull()
+    expect(ids(sortTickets(state.tickets, state.orderItems))).toEqual([fresh.id, acked.id, 'seed-ticket-1', 'seed-ticket-2'])
   })
 
   it('REQ-08: two unacknowledged allergy tickets keep sentAt order between them', () => {
@@ -179,5 +266,52 @@ describe('offeredActions — review and sign-off (every role × kitchenStatus ×
       const { item, ticket } = build(status)
       expect(offeredActions(item, ticket, dish('steak-frites'), 'expediter')).not.toContain('signOff')
     }
+  })
+})
+
+describe('offeredActions — dish lists the seat\'s allergen (V2, REQ-10)', () => {
+  function ackedItem(dishId: string, state = withAllergy(seed(), 'T12', 3, { allergens: ['tree-nuts'] }), pickedChange?: string) {
+    const { items, ticket } = withSentAllergyTicket(state, {
+      tableId: 'T12',
+      items: [{ seat: 3, dishId, kitchenStatus: 'Acknowledged', pickedChange }],
+    })
+    return { item: items[0], ticket }
+  }
+
+  it('REQ-10: an acknowledged walnut salad for a tree-nut seat offers "cannotConfirm" but not "confirm" (US4 scenario 8)', () => {
+    const { item, ticket } = ackedItem('walnut-salad')
+    expect(listsSnapshotAllergen(item, dish('walnut-salad'))).toBe(true)
+    const actions = offeredActions(item, ticket, dish('walnut-salad'), 'station lead')
+    expect(actions).not.toContain('confirm')
+    expect(actions).toContain('cannotConfirm')
+  })
+
+  it('REQ-10: a picked chef-approved change does not bring "confirm" back (C-12)', () => {
+    const { item, ticket } = ackedItem('walnut-salad', undefined, 'Without walnuts')
+    expect(item.pickedChange).toBe('Without walnuts')
+    const actions = offeredActions(item, ticket, dish('walnut-salad'), 'station lead')
+    expect(actions).not.toContain('confirm')
+    expect(actions).toContain('cannotConfirm')
+  })
+
+  it('REQ-10: a preference-severity snapshot allergen on an allergy-order seat also blocks "confirm" (R-15)', () => {
+    let s = withAllergy(seed(), 'T12', 3, { allergens: ['milk'], severity: 'severe' })
+    s = withAllergy(s, 'T12', 3, { allergens: ['tree-nuts'], severity: 'preference' })
+    const { item, ticket } = ackedItem('walnut-salad', s)
+    expect(item.isAllergyOrder).toBe(true)
+    expect(listsSnapshotAllergen(item, dish('walnut-salad'))).toBe(true)
+    expect(offeredActions(item, ticket, dish('walnut-salad'), 'station lead')).not.toContain('confirm')
+  })
+
+  it('REQ-10: steak frites for the same tree-nut seat still offers "confirm"', () => {
+    const { item, ticket } = ackedItem('steak-frites')
+    expect(listsSnapshotAllergen(item, dish('steak-frites'))).toBe(false)
+    expect(offeredActions(item, ticket, dish('steak-frites'), 'station lead')).toContain('confirm')
+  })
+
+  it('REQ-10: the check uses the allergy snapshot, not the seat\'s current allergies', () => {
+    const { item, ticket } = ackedItem('walnut-salad', withAllergy(seed(), 'T12', 3, { allergens: ['milk'] }))
+    expect(listsSnapshotAllergen(item, dish('walnut-salad'))).toBe(false)
+    expect(offeredActions(item, ticket, dish('walnut-salad'), 'station lead')).toContain('confirm')
   })
 })
