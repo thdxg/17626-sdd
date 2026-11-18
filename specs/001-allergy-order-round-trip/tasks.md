@@ -273,8 +273,8 @@ description: "Task list for Allergy Order Round Trip"
 
 ### Check and deploy V2
 
-- [ ] T085 Run the manual two-tab walkthrough in quickstart.md §3, including the **V2** steps, on `npm run dev`, then again on the V2 URL after the merge to `main` deploys it. Record any difference as a defect against its REQ ID. — REQ: REQ-06, REQ-08, REQ-10, REQ-12, REQ-20
-- [ ] T086 [P] Fill in "What changed from V1 to V2" in the root `README.md`: the four changes with their REQ IDs, C-12, and links to the spec's 2026-11-17 clarifications and to `docs/learning-log.md` Section 3. — REQ: REQ-06, REQ-08, REQ-10, REQ-20 (Constitution II)
+- [X] T085 Run the manual two-tab walkthrough in quickstart.md §3, including the **V2** steps, on `npm run dev`, then again on the V2 URL after the merge to `main` deploys it. Record any difference as a defect against its REQ ID. — REQ: REQ-06, REQ-08, REQ-10, REQ-12, REQ-20
+- [X] T086 [P] Fill in "What changed from V1 to V2" in the root `README.md`: the four changes with their REQ IDs, C-12, and links to the spec's 2026-11-17 clarifications and to `docs/learning-log.md` Section 3. — REQ: REQ-06, REQ-08, REQ-10, REQ-20 (Constitution II)
 
 ---
 
