@@ -1,4 +1,5 @@
-// Chef-approved changes under a "Contains" dish; nothing else is offered. REQ-20 (SHOULD)
+// Chef-approved changes listed as text on a menu row under a "Contains" dish; nothing else is
+// offered. The order item has the picker (OrderPanel). REQ-20
 import { approvedChangesFor } from '../../domain/labels'
 import type { Allergy, DishRecord } from '../../domain/types'
 
