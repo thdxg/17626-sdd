@@ -12,9 +12,25 @@ The goal model mainly helped us in three ways. First, it showed overlaps, so we 
 
 ## 2. Prototype Evaluation
 
+We tested V1 (commit `53c5965`) on 11/17 by running the two-tab walkthrough: one tab as the server's tablet and one as the kitchen display, with a tree-nut allergy seat. We found six things, O-01 to O-06. None of them were code defects. Five were requirements issues, where the problem was in the spec. We fixed four of them in V2 (see Section 3) and left O-03 open. O-05 looked like a problem at first, but we decided it was intended behaviour.
+
+1. O-01: The kitchen could confirm a walnut salad for a tree-nut seat, and the tablet then showed "OK to serve". REQ-10 never said the kitchen can't confirm a dish with the guest's allergen, because we assumed the kitchen would catch it. But Antoine and Sofia both want the kitchen to say plainly when something can't be verified, so this rule needs to be in the system, not just in the cook's head.
+
+2. O-02: The server recorded "traces", but the kitchen ticket never showed it. REQ-06 just didn't list it. Sofia's worry about trace exposure is really for the cooks, not the server, so we had put the information on the wrong screen.
+
+3. O-03: For an allergy seat, almost every dish says "Not confirmed". This is what REQ-05 asks for, and it comes from C-1: Kayla wants a "safe" label, but Sofia says nothing is safe until the kitchen checks it. We still don't want to show "safe". But seeing the whole menu say "Not confirmed" made us realize the label may not help Kayla at all, and she might just stop reading it. We can't answer this from the transcripts, so we kept it as an open question to ask Kayla. It showed us that a conflict can look resolved on paper while one stakeholder still pays the cost.
+
+4. O-04: Chef-approved changes like "Without walnuts" were only shown as text. The server couldn't pick one and the kitchen never saw it. REQ-20 only said to "offer" them, so we read Kayla too literally. She wanted something she could actually offer the guest and send with the order.
+
+5. O-05: A seat with only a "preference" is sent as a normal order, and the kitchen doesn't see the preference. At first this looked like the same problem as O-02. But REQ-18 says a preference should be handled as a normal modification, because a preference doesn't need a kitchen check. Flagging preferences would also add more alerts, which Antoine said makes cooks ignore them. So we decided it was intended. No stakeholder said this directly, though. REQ-18 is our own refinement, so it's a judgment call we should confirm with Antoine. It also reminded us that everything depends on the server choosing the right severity.
+
+6. O-06: The allergy ticket dropped back among the normal tickets after "Acknowledge". REQ-08 said "until acknowledged", so the code was right. But when we reread the interview, Antoine meant the expediter's acknowledgment at the end, not our "Acknowledge" button at the start. Same word, different meaning.
+
+Overall, all of our tests passed, so we would not have found any of these by testing alone. We found them by walking through a real order and comparing it with what the stakeholders said. Most of the issues were on the kitchen side, which told us we had focused on what the server records and not enough on what the kitchen needs to see.
+
 ## 3. Revisions and Learning
 
-We found four problems in our v1 model. All of them were requirements issues. So we changed the spec and the goal model first, and then updated the code.
+Section 2 found five requirements issues. This section covers the four we fixed in V2 (O-01, O-02, O-04 and O-06). We kept O-03 open on purpose, because only Kayla can tell us whether the "Not confirmed" label works for her. Since all four were requirements issues, we changed the spec and the goal model first, and then updated the code.
 
 1. Traces should be shown in kitchen(REQ-06, G-30).
    In V1, the server recorded whether traces matter, but only the tablet showed it. However, the kitchen is the one that handles most of the cross stage communication, so it needs the trace of order the most. Now each allergy item on the kitchen ticket shows “Traces: yes” or “Traces: no”. So Sofia’s trace setting now reaches the people who cook her food.

@@ -84,8 +84,7 @@ We split the work into three leads, one per stage of the Spec Kit cycle. Each le
 - Wrote the "prototype changes" part of learning log Section 3 and the README.
 
 **Yuting Wang, Evaluation lead (traceability and evaluation)**
-- Indexed the stakeholder interview transcripts with line references and built the Requirements Traceability Matrix (`docs/traceability.md`) from the goal model and REQ IDs.
-- Reviewed the spec for testability and wrote test scenarios from the acceptance criteria.
-- Evaluated Prototype V1 against every acceptance scenario, logged each observation and labelled it an implementation defect or a requirements issue.
-- Wrote learning log Section 2, prepared the V2 re-check checklist, re-evaluated V2 and updated the matrix with V2 status.
-- Compiled `docs/learning-log.md` from everyone's sections.
+- Compared the conflicts in the three Assignment 2 goal models to inform the sprint scope.
+- Built the Requirements Traceability Matrix (`docs/traceability.md`) from the goal model and REQ IDs.
+- Reviewed the spec for testability and raised the issues that became the V2 changes.
+- Wrote the V1 evaluation checklist from the acceptance scenarios, and learning log Section 2.
