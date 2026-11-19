@@ -66,8 +66,25 @@ npx vitest run   # tests; each test name starts with its REQ ID
 
 ## Roles and Responsibilities
 
-_TODO: each member to review and edit their own entry._
+We split the work into three leads, one per stage of the Spec Kit cycle. Each lead owned one stream of work and reviewed the others' hand-offs. All three of us met to lock the sprint scope and the conflict decisions, and to pick the V2 changes from the V1 observations. Each member wrote their own answers to the reflection questions in the learning log, without AI help.
 
-- **Steven Chen, Requirements lead.** Merged the three goal models into the team goal model and set the sprint scope and its justification. Wrote the constitution and the specification (REQ IDs, acceptance scenarios, assumptions, conflict decisions). Reviewed the plan and tasks for drift from the spec and revised the spec for V2.
-- **Ethan Lee, Build lead.** Set up the repository, Spec Kit, and the Vercel deployments for V1 and V2. Reviewed the spec for buildability (added assumption A-10, shared state between tabs). Ran Spec Kit plan, tasks, and implement, then reviewed and verified the generated code (build, lint, 202 tests, browser checks). Implemented and deployed V2. Wrote the README.
-- **Yuting Wang, Evaluation lead.** Compared the conflicts in the three Assignment 2 goal models to inform the sprint scope, and built the Requirements Traceability Matrix. Reviewed the spec for testability and raised the issues that became V2 changes. Yuting wrote the V1 evaluation checklist from the acceptance scenarios and Section 2 of the learning log.
+**Steven Chen, Requirements lead (goal model and spec)**
+- Merged the three individual goal models into the team goal model and drafted the sprint scope (core, user-facing, uncertain goals) with its justification.
+- Wrote `docs/goal-model.md` and updated the goal model to show the sprint scope.
+- Wrote the constitution and the specification: goals, REQ IDs, acceptance scenarios, assumptions, edge cases and conflict decisions.
+- Reviewed the plan and tasks for drift from the spec and signed them off. Reviewed the V1 code PR.
+- Revised the spec and goal model for V2 from the V1 evaluation (spec first, then behaviour), keeping unresolved conflicts such as C-12.
+- Wrote learning log Section 1 and the "goal model changes" part of Section 3.
+
+**Ethan Lee, Build lead (repository, plan, prototype)**
+- Created the repository, added the team, installed Spec Kit, and tested the Spec Kit workflow on a dummy spec.
+- Reviewed the spec for buildability (added assumption A-10, shared state between two tabs).
+- Ran Spec Kit `plan`, `tasks` and `implement` for V1, then reviewed, fixed and verified the output (build, lint, 202 tests, browser checks). Deployed and tagged V1.
+- Updated the plan and tasks from the revised spec, implemented V2 (241 tests), deployed it to a separate URL, walked through it in two tabs, and tagged V2.
+- Wrote the "prototype changes" part of learning log Section 3 and the README.
+
+**Yuting Wang, Evaluation lead (traceability and evaluation)**
+- Compared the conflicts in the three Assignment 2 goal models to inform the sprint scope.
+- Built the Requirements Traceability Matrix (`docs/traceability.md`) from the goal model and REQ IDs.
+- Reviewed the spec for testability and raised the issues that became the V2 changes.
+- Wrote the V1 evaluation checklist from the acceptance scenarios, and learning log Section 2.
